@@ -1,0 +1,81 @@
+name: rubygopher
+
+# Shared block for the Rails containers (web + jobs) — a YAML extension field.
+# web and jobs use the SAME image and environment; they differ only in command.
+x-backend: &backend
+  build:
+    context: ./backend
+    dockerfile: Dockerfile.dev
+    args:
+      # Match the container user to the host user so generated files are editable.
+      UID: "${UID:-1000}"
+      GID: "${GID:-1000}"
+  image: rubygopher_backend:dev
+  volumes:
+    - ./backend:/app:cached          # live code from the host
+    - bundle_cache:/usr/local/bundle # gems survive container rebuilds
+  environment:
+    RAILS_ENV: development
+    # DATABASE_URL is merged on top of database.yml — sets host/user/db name for Docker.
+    DATABASE_URL: postgres://postgres:postgres@db:5432/rubygopher_development
+    REDIS_URL: redis://redis:6379/0
+    RAILS_LOG_TO_STDOUT: "true"
+  depends_on:
+    db:
+      condition: service_healthy     # wait until postgres actually accepts connections
+    redis:
+      condition: service_started
+  networks:
+    - rubygopher
+
+services:
+  web:
+    <<: *backend
+    # bundle check || bundle install — installs gems only if the lock changed (fast start).
+    # Remove the stale pid so the container restarts without "server is already running".
+    command: bash -c "bundle check || bundle install; rm -f tmp/pids/server.pid; bin/rails server -b 0.0.0.0 -p 3000"
+    ports:
+      - "3000:3000"
+    stdin_open: true                 # ┐ needed for the debugger (debug/binding.b)
+    tty: true                        # ┘
+
+  # NOTE: works only after the sidekiq + redis gems are added to the Gemfile (next step).
+  # Until then run web/db/redis only: `docker compose up web`
+  jobs:
+    <<: *backend
+    command: bash -c "bundle check || bundle install; bundle exec sidekiq -C config/sidekiq.yml"
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: rubygopher_development
+    ports:
+      - "5432:5432"                  # exposed to the host — handy for psql/GUI clients
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rubygopher
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - rubygopher
+
+volumes:
+  bundle_cache:
+  postgres_data:
+  redis_data:
+
+networks:
+  rubygopher:

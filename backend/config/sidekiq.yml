@@ -1,0 +1,10 @@
+# Priority queues, processed top-to-bottom within a poll.
+# Weighted priority: higher number = pulled more often (not strict ordering).
+#   critical — user-facing, must run promptly (e.g. status-change side effects)
+#   default  — general background work
+#   low      — bulk/aggregation work (vacancy sync, skill extraction)
+:concurrency: 5
+:queues:
+  - [critical, 4]
+  - [default, 2]
+  - [low, 1]

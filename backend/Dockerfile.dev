@@ -1,0 +1,40 @@
+# syntax=docker/dockerfile:1
+# Image for LOCAL DEVELOPMENT ONLY.
+# The production image is the sibling Dockerfile (multi-stage, non-root, Thruster) for Kamal/k8s.
+#
+# Dev-image idea: keep only SYSTEM dependencies and bundler here.
+# Gems and code are NOT baked into the image — they arrive via volumes in compose:
+#   - code → ./backend:/app                  (edit on host, container sees it instantly)
+#   - gems → bundle_cache:/usr/local/bundle  (survive rebuilds, installed once)
+# So adding a gem to the Gemfile needs no image rebuild — just `bundle install`.
+
+ARG RUBY_VERSION=3.4.10
+FROM ruby:${RUBY_VERSION}-slim
+
+# libpq-dev — builds the pg gem; build-essential/git/pkg-config — native gem builds;
+# libvips — image_processing; postgresql-client — psql/pg_isready inside the container.
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y \
+      build-essential git libpq-dev libyaml-dev pkg-config libvips postgresql-client curl && \
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives
+
+# Run as a non-root user whose UID/GID match the host user (default 1000), so files
+# created by generators (rails g ...) are owned by the host user and editable directly.
+ARG UID=1000
+ARG GID=1000
+RUN groupadd --gid ${GID} app && \
+    useradd --uid ${UID} --gid ${GID} --create-home --shell /bin/bash app
+
+WORKDIR /app
+
+# Gems are installed into this path (mounted as a named volume in compose).
+# Owned by the app user so bundle install can write there.
+ENV BUNDLE_PATH=/usr/local/bundle \
+    BUNDLE_JOBS=4 \
+    BUNDLE_RETRY=3
+RUN mkdir -p ${BUNDLE_PATH} && chown -R app:app ${BUNDLE_PATH}
+
+USER app
+RUN gem install bundler
+
+# No CMD — the command (puma/sidekiq) is defined by docker-compose.

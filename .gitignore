@@ -1,0 +1,14 @@
+# Root-level ignores for the monorepo.
+# backend/ keeps its own Rails .gitignore; this file covers repo-wide noise.
+
+# OS / editor
+.DS_Store
+*.swp
+
+# JetBrains IDE
+/.idea/
+
+# Local environment overrides
+.env
+.env.local
+.env.*.local
