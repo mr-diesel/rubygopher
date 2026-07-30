@@ -29,6 +29,7 @@ gem "redis", "~> 5.3"            # Sidekiq client (redis-rb 4.2+ required)
 # --- API layer (React portal) ---
 gem "grape", "~> 2.2"            # API framework for the user-facing portal
 gem "grape-entity", "~> 1.0"    # response serialization for Grape
+gem "rack-cors", "~> 2.0", require: "rack/cors"
 
 # --- Auth ---
 gem "devise", "~> 4.9"          # authentication: Admin (session) + User (JWT base)

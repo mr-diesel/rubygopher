@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
-  devise_for :users
+  # User authenticates via the JWT API (Grape), so no Devise web routes — only the Warden mapping.
+  devise_for :users, skip: :all
   devise_for :admins
 
   # AdminArea module (not Admin) avoids clashing with the Admin model; URL stays /admin.
@@ -14,6 +15,8 @@ Rails.application.routes.draw do
   # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
+
+  mount API => "/"
 
   root to: redirect("/admin")
 end

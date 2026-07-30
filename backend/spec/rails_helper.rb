@@ -9,6 +9,7 @@ abort("The Rails environment is running in production mode!") if Rails.env.produ
 # return unless Rails.env.test?
 require 'rspec/rails'
 require 'rspec-sidekiq'
+require 'shoulda/matchers'
 # Add additional requires below this line. Rails is not loaded until this point!
 
 # Requires supporting ruby files with custom matchers and macros, etc, in
@@ -71,6 +72,9 @@ RSpec.configure do |config|
 
   # FactoryBot: use `create`/`build` without the `FactoryBot.` prefix in specs.
   config.include FactoryBot::Syntax::Methods
+
+  # Send request specs from an allowed host (matched by the default ".localhost").
+  config.before(:each, type: :request) { host! "localhost" }
 end
 
 # shoulda-matchers: enable ActiveRecord/ActiveModel matchers (belong_to, validate_*).
