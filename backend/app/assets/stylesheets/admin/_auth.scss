@@ -1,0 +1,14 @@
+@use "variables" as v;
+
+.auth-card {
+  max-width: 380px;
+  margin: 3rem auto;
+  padding: 2rem;
+  background: #fff;
+  border-radius: v.$radius;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+
+  h2 { margin-top: 0; }
+
+  a { color: v.$header-bg; }
+}

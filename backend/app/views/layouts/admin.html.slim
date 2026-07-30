@@ -1,0 +1,21 @@
+doctype html
+html
+  head
+    title RubyGopher — Admin
+    meta name="viewport" content="width=device-width,initial-scale=1"
+    = csrf_meta_tags
+    = csp_meta_tag
+    = stylesheet_link_tag "admin", "data-turbo-track": "reload"
+  body
+    header.admin-header
+      span.brand RubyGopher Admin
+      span.spacer
+      - if admin_signed_in?
+        span = current_admin.email
+        = button_to "Logout", destroy_admin_session_path, method: :delete
+    - if notice
+      .flash.notice = notice
+    - if alert
+      .flash.alert = alert
+    main
+      = yield

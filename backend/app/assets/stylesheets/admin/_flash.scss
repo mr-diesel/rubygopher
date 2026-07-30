@@ -1,0 +1,11 @@
+@use "variables" as v;
+
+.flash {
+  max-width: v.$content-width;
+  margin: 1rem auto 0;
+  padding: 0.6rem 1rem;
+  border-radius: v.$radius;
+
+  &.notice { background: v.$notice-bg; color: v.$notice-text; }
+  &.alert  { background: v.$alert-bg;  color: v.$alert-text; }
+}

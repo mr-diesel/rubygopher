@@ -1,7 +1,11 @@
 Rails.application.routes.draw do
   devise_for :users
   devise_for :admins
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
+
+  # AdminArea module (not Admin) avoids clashing with the Admin model; URL stays /admin.
+  namespace :admin, module: "admin_area" do
+    root "dashboard#index"
+  end
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
   # Can be used by load balancers and uptime monitors to verify that the app is live.
@@ -11,6 +15,5 @@ Rails.application.routes.draw do
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
-  # Defines the root path route ("/")
-  # root "posts#index"
+  root to: redirect("/admin")
 end

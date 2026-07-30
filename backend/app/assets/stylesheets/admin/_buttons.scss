@@ -1,0 +1,10 @@
+@use "variables" as v;
+
+.admin-header button {
+  background: v.$danger;
+  color: #fff;
+  border: 0;
+  padding: 0.4rem 0.8rem;
+  border-radius: v.$radius;
+  cursor: pointer;
+}

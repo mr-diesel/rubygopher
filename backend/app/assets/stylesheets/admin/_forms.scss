@@ -1,0 +1,41 @@
+@use "variables" as v;
+
+form .field { margin-bottom: 1rem; }
+
+form label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+form input[type="email"],
+form input[type="password"],
+form input[type="text"] {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #cfd4dc;
+  border-radius: v.$radius;
+  font: inherit;
+}
+
+form .field-remember {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+
+  label { margin: 0; font-weight: 400; }
+  input[type="checkbox"] { width: auto; }
+}
+
+form .actions { margin-top: 1.25rem; }
+
+form input[type="submit"] {
+  background: v.$header-bg;
+  color: #fff;
+  border: 0;
+  padding: 0.55rem 1.1rem;
+  border-radius: v.$radius;
+  cursor: pointer;
+  font: inherit;
+}

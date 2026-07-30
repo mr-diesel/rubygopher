@@ -39,11 +39,13 @@ services:
     stdin_open: true                 # ┐ needed for the debugger (debug/binding.b)
     tty: true                        # ┘
 
-  # NOTE: works only after the sidekiq + redis gems are added to the Gemfile (next step).
-  # Until then run web/db/redis only: `docker compose up web`
   jobs:
     <<: *backend
     command: bash -c "bundle check || bundle install; bundle exec sidekiq -C config/sidekiq.yml"
+
+  css:
+    <<: *backend
+    command: bash -c "bundle check || bundle install; bin/rails dartsass:watch"
 
   db:
     image: postgres:16-alpine
