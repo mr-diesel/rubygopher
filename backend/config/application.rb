@@ -55,5 +55,15 @@ module Backend
 
     # Run Active Job through Sidekiq.
     config.active_job.queue_adapter = :sidekiq
+
+    # Grape APIs are mounted in routes.rb by constant. Rails unloads those constants on
+    # every code reload, leaving a stale mount that raises on the next request. Re-draw
+    # the routes whenever any app/*.rb changes so the fresh Grape classes get mounted.
+    if Rails.env.development?
+      routes_reloader = ActiveSupport::FileUpdateChecker.new([], Rails.root.join("app").to_s => ["rb"]) do
+        Rails.application.reload_routes!
+      end
+      config.to_prepare { routes_reloader.execute_if_updated }
+    end
   end
 end

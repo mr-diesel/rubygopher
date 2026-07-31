@@ -1,0 +1,43 @@
+@use "variables" as v;
+
+.btn {
+  display: inline-block;
+  background: v.$header-bg;
+  color: #fff;
+  padding: 0.4rem 0.8rem;
+  border-radius: v.$radius;
+  text-decoration: none;
+  margin-bottom: 1rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: v.$radius;
+  overflow: hidden;
+
+  th, td {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #e6e8ec;
+  }
+
+  .actions-col { white-space: nowrap; }
+  .actions-col a { margin-right: 0.75rem; }
+}
+
+.link-danger {
+  background: none;
+  border: 0;
+  color: v.$alert-text;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  text-decoration: underline;
+}
+
+textarea.code {
+  font-family: ui-monospace, monospace;
+  white-space: pre;
+}

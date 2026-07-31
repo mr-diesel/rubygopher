@@ -1,0 +1,22 @@
+h1 Interview questions
+p Default questions shown to every user (they can hide these or add their own).
+= link_to "New question", new_admin_interview_question_path, class: "btn"
+
+table.table
+  thead
+    tr
+      th Label
+      th Category
+      th Question
+      th Language
+      th.actions-col
+  tbody
+    - @questions.each do |q|
+      tr
+        td = q.label
+        td = q.category
+        td = truncate(q.question, length: 60)
+        td = q.language
+        td.actions-col
+          = link_to "Edit", edit_admin_interview_question_path(q)
+          = button_to "Delete", admin_interview_question_path(q), method: :delete, form: { data: { turbo_confirm: "Delete this question?" } }, class: "link-danger"

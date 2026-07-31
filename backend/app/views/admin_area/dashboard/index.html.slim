@@ -2,4 +2,5 @@ h1 Admin Dashboard
 p
   | Signed in as
   strong<>  #{current_admin.email}
-p Interview questions management will live here (stage 3).
+ul
+  li = link_to "Interview questions", admin_interview_questions_path

@@ -1,5 +1,6 @@
 import { useAuth } from "./hooks/useAuth";
 import Login from "./pages/Login";
+import Helper from "./pages/Helper";
 
 export default function App() {
   const auth = useAuth();
@@ -9,12 +10,10 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <strong>RubyGopher</strong>
+        <strong>RubyGopher — Interview Helper</strong>
         <button onClick={auth.logout}>Logout</button>
       </header>
-      <main>
-        <p>You are signed in. The interview helper will appear here (stage 3).</p>
-      </main>
+      <Helper />
     </div>
   );
 }

@@ -6,6 +6,7 @@ Rails.application.routes.draw do
   # AdminArea module (not Admin) avoids clashing with the Admin model; URL stays /admin.
   namespace :admin, module: "admin_area" do
     root "dashboard#index"
+    resources :interview_questions
   end
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

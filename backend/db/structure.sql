@@ -170,6 +170,76 @@ ALTER SEQUENCE public.company_outreaches_id_seq OWNED BY public.company_outreach
 
 
 --
+-- Name: hidden_interview_questions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.hidden_interview_questions (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    interview_question_id bigint NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: hidden_interview_questions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.hidden_interview_questions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: hidden_interview_questions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.hidden_interview_questions_id_seq OWNED BY public.hidden_interview_questions.id;
+
+
+--
+-- Name: interview_questions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.interview_questions (
+    id bigint NOT NULL,
+    user_id bigint,
+    label character varying NOT NULL,
+    question text NOT NULL,
+    answer text,
+    code text,
+    language character varying,
+    "position" integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    category character varying DEFAULT 'General'::character varying NOT NULL
+);
+
+
+--
+-- Name: interview_questions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.interview_questions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: interview_questions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.interview_questions_id_seq OWNED BY public.interview_questions.id;
+
+
+--
 -- Name: job_application_events; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -285,6 +355,72 @@ CREATE SEQUENCE public.skills_id_seq
 --
 
 ALTER SEQUENCE public.skills_id_seq OWNED BY public.skills.id;
+
+
+--
+-- Name: user_category_orders; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_category_orders (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    category character varying NOT NULL,
+    "position" integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: user_category_orders_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.user_category_orders_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: user_category_orders_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.user_category_orders_id_seq OWNED BY public.user_category_orders.id;
+
+
+--
+-- Name: user_question_orders; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_question_orders (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    interview_question_id bigint NOT NULL,
+    "position" integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: user_question_orders_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.user_question_orders_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: user_question_orders_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.user_question_orders_id_seq OWNED BY public.user_question_orders.id;
 
 
 --
@@ -502,6 +638,20 @@ ALTER TABLE ONLY public.company_outreaches ALTER COLUMN id SET DEFAULT nextval('
 
 
 --
+-- Name: hidden_interview_questions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hidden_interview_questions ALTER COLUMN id SET DEFAULT nextval('public.hidden_interview_questions_id_seq'::regclass);
+
+
+--
+-- Name: interview_questions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.interview_questions ALTER COLUMN id SET DEFAULT nextval('public.interview_questions_id_seq'::regclass);
+
+
+--
 -- Name: job_application_events id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -520,6 +670,20 @@ ALTER TABLE ONLY public.job_applications ALTER COLUMN id SET DEFAULT nextval('pu
 --
 
 ALTER TABLE ONLY public.skills ALTER COLUMN id SET DEFAULT nextval('public.skills_id_seq'::regclass);
+
+
+--
+-- Name: user_category_orders id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_category_orders ALTER COLUMN id SET DEFAULT nextval('public.user_category_orders_id_seq'::regclass);
+
+
+--
+-- Name: user_question_orders id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_question_orders ALTER COLUMN id SET DEFAULT nextval('public.user_question_orders_id_seq'::regclass);
 
 
 --
@@ -598,6 +762,22 @@ ALTER TABLE ONLY public.company_outreaches
 
 
 --
+-- Name: hidden_interview_questions hidden_interview_questions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hidden_interview_questions
+    ADD CONSTRAINT hidden_interview_questions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: interview_questions interview_questions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.interview_questions
+    ADD CONSTRAINT interview_questions_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: job_application_events job_application_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -627,6 +807,22 @@ ALTER TABLE ONLY public.schema_migrations
 
 ALTER TABLE ONLY public.skills
     ADD CONSTRAINT skills_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_category_orders user_category_orders_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_category_orders
+    ADD CONSTRAINT user_category_orders_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_question_orders user_question_orders_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_question_orders
+    ADD CONSTRAINT user_question_orders_pkey PRIMARY KEY (id);
 
 
 --
@@ -684,6 +880,20 @@ CREATE INDEX idx_on_job_application_id_occurred_at_1adce1b496 ON public.job_appl
 
 
 --
+-- Name: idx_on_user_id_interview_question_id_68cd079f8b; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_on_user_id_interview_question_id_68cd079f8b ON public.hidden_interview_questions USING btree (user_id, interview_question_id);
+
+
+--
+-- Name: idx_on_user_id_interview_question_id_a3c538bc08; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_on_user_id_interview_question_id_a3c538bc08 ON public.user_question_orders USING btree (user_id, interview_question_id);
+
+
+--
 -- Name: index_admins_on_email; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -723,6 +933,27 @@ CREATE INDEX index_company_outreaches_on_company_id ON public.company_outreaches
 --
 
 CREATE UNIQUE INDEX index_company_outreaches_on_user_id_and_company_id ON public.company_outreaches USING btree (user_id, company_id);
+
+
+--
+-- Name: index_hidden_interview_questions_on_interview_question_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_hidden_interview_questions_on_interview_question_id ON public.hidden_interview_questions USING btree (interview_question_id);
+
+
+--
+-- Name: index_interview_questions_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_interview_questions_on_user_id ON public.interview_questions USING btree (user_id);
+
+
+--
+-- Name: index_interview_questions_on_user_id_and_position; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_interview_questions_on_user_id_and_position ON public.interview_questions USING btree (user_id, "position");
 
 
 --
@@ -772,6 +1003,20 @@ CREATE INDEX index_job_applications_pending_follow_up ON public.job_applications
 --
 
 CREATE UNIQUE INDEX index_skills_on_slug ON public.skills USING btree (slug);
+
+
+--
+-- Name: index_user_category_orders_on_user_id_and_category; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_user_category_orders_on_user_id_and_category ON public.user_category_orders USING btree (user_id, category);
+
+
+--
+-- Name: index_user_question_orders_on_interview_question_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_user_question_orders_on_interview_question_id ON public.user_question_orders USING btree (interview_question_id);
 
 
 --
@@ -891,6 +1136,30 @@ ALTER TABLE ONLY public.vacancy_skills
 
 
 --
+-- Name: user_question_orders fk_rails_3cd041c1ae; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_question_orders
+    ADD CONSTRAINT fk_rails_3cd041c1ae FOREIGN KEY (interview_question_id) REFERENCES public.interview_questions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: hidden_interview_questions fk_rails_445f4cb9de; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hidden_interview_questions
+    ADD CONSTRAINT fk_rails_445f4cb9de FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: user_question_orders fk_rails_524dd5a445; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_question_orders
+    ADD CONSTRAINT fk_rails_524dd5a445 FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: user_skills fk_rails_59acb6e327; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -915,11 +1184,35 @@ ALTER TABLE ONLY public.job_applications
 
 
 --
+-- Name: user_category_orders fk_rails_621935216d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_category_orders
+    ADD CONSTRAINT fk_rails_621935216d FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: interview_questions fk_rails_6d359c2f48; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.interview_questions
+    ADD CONSTRAINT fk_rails_6d359c2f48 FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: job_application_events fk_rails_71ec7e0805; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.job_application_events
     ADD CONSTRAINT fk_rails_71ec7e0805 FOREIGN KEY (job_application_id) REFERENCES public.job_applications(id) ON DELETE CASCADE;
+
+
+--
+-- Name: hidden_interview_questions fk_rails_89d1705a87; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hidden_interview_questions
+    ADD CONSTRAINT fk_rails_89d1705a87 FOREIGN KEY (interview_question_id) REFERENCES public.interview_questions(id) ON DELETE CASCADE;
 
 
 --
@@ -977,6 +1270,11 @@ ALTER TABLE ONLY public.user_skills
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260731102548'),
+('20260731095335'),
+('20260731095334'),
+('20260730154356'),
+('20260730154355'),
 ('20260730112856'),
 ('20260730112855'),
 ('20260730112854'),
