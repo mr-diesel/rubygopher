@@ -4,9 +4,11 @@ import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } 
 import { CSS } from "@dnd-kit/utilities";
 import * as api from "../api/questions";
 import * as catApi from "../api/categories";
-import CodeEditor from "../components/CodeEditor";
+import RichEditor from "../components/RichEditor";
+import RichContent from "../components/RichContent";
+import { emptyDoc } from "../lib/editor";
 
-const emptyDraft = { label: "", question: "", answer: "", code: "", language: "ruby", category: "" };
+const newDraft = () => ({ label: "", question: "", category: "", body: emptyDoc });
 const byPosition = (a, b) => a.position - b.position;
 
 function SortableRow({ id, active, onClick, children }) {
@@ -31,7 +33,7 @@ export default function Helper() {
   const [category, setCategory] = useState(null);
   const [selected, setSelected] = useState(null);
   const [mode, setMode] = useState(null); // null | "create" | "edit"
-  const [draft, setDraft] = useState(emptyDraft);
+  const [draft, setDraft] = useState(newDraft());
 
   const pick = (q) => {
     setMode(null);
@@ -97,7 +99,7 @@ export default function Helper() {
 
   const startCreate = () => {
     setSelected(null);
-    setDraft(emptyDraft);
+    setDraft(newDraft());
     setMode("create");
   };
 
@@ -106,9 +108,7 @@ export default function Helper() {
       label: selected.label,
       category: selected.category,
       question: selected.question,
-      answer: selected.answer || "",
-      code: selected.code || "",
-      language: selected.language || ""
+      body: selected.body || emptyDoc
     });
     setMode("edit");
   };
@@ -171,22 +171,8 @@ export default function Helper() {
               onChange={(e) => setDraft({ ...draft, question: e.target.value })}
               required
             />
-            <textarea
-              placeholder="Answer"
-              value={draft.answer}
-              onChange={(e) => setDraft({ ...draft, answer: e.target.value })}
-            />
-            <input
-              placeholder="Language (ruby, go, ...)"
-              value={draft.language}
-              onChange={(e) => setDraft({ ...draft, language: e.target.value })}
-            />
-            <CodeEditor
-              value={draft.code}
-              language={draft.language}
-              editable
-              onChange={(v) => setDraft({ ...draft, code: v })}
-            />
+            <span className="field-label">Answer (text + code blocks)</span>
+            <RichEditor value={draft.body} onChange={(body) => setDraft({ ...draft, body })} />
             <div className="form-actions">
               <button type="submit">{mode === "edit" ? "Save" : "Create"}</button>
               <button type="button" className="ghost" onClick={() => setMode(null)}>
@@ -200,8 +186,7 @@ export default function Helper() {
               <h2>{selected.question}</h2>
               {selected.default && <span className="badge">default</span>}
             </div>
-            {selected.answer && <p className="answer">{selected.answer}</p>}
-            <CodeEditor value={selected.code} language={selected.language} editable={false} />
+            <RichContent content={selected.body} />
             <div className="q-actions">
               {selected.editable && <button onClick={startEdit}>Edit</button>}
               {selected.editable && (

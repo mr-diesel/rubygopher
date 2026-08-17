@@ -45,13 +45,14 @@ RSpec.describe "API V1 Interview Questions", type: :request do
   end
 
   describe "PATCH /api/v1/interview_questions/:id" do
-    it "updates the user's own code" do
+    it "updates the user's own body" do
       q = create(:interview_question, user: user)
+      body = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "updated" }] }] }
 
-      patch "/api/v1/interview_questions/#{q.id}", params: { code: "puts 42" }, headers: auth_headers, as: :json
+      patch "/api/v1/interview_questions/#{q.id}", params: { body: body }, headers: auth_headers, as: :json
 
       expect(response).to have_http_status(:ok)
-      expect(q.reload.code).to eq("puts 42")
+      expect(response.parsed_body.dig("body", "content", 0, "content", 0, "text")).to eq("updated")
     end
 
     it "cannot touch a default question" do

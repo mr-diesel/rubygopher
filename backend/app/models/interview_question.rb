@@ -17,4 +17,27 @@ class InterviewQuestion < ApplicationRecord
   def default?
     user_id.nil?
   end
+
+  # Build a TipTap document (JSON string) from legacy answer/code/language fields.
+  def self.legacy_to_body(answer, code, language)
+    content = []
+
+    answer.to_s.split(/\n{2,}/).each do |para|
+      next if para.strip.empty?
+
+      nodes = []
+      para.split("\n").each_with_index do |line, i|
+        nodes << { type: "hardBreak" } if i.positive?
+        nodes << { type: "text", text: line } unless line.empty?
+      end
+      content << { type: "paragraph", content: nodes }
+    end
+
+    if code.present?
+      content << { type: "codeBlock", attrs: { language: language }, content: [{ type: "text", text: code }] }
+    end
+
+    content << { type: "paragraph" } if content.empty?
+    { type: "doc", content: content }.to_json
+  end
 end

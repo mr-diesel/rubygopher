@@ -12,3 +12,7 @@
 .env
 .env.local
 .env.*.local
+
+# Database dumps
+/rubygopher_dump.sql
+*.dump

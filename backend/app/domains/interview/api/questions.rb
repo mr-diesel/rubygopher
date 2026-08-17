@@ -9,9 +9,7 @@ module Interview
             id: question.id,
             label: question.label,
             question: question.question,
-            answer: question.answer,
-            code: question.code,
-            language: question.language,
+            body: question.body.present? ? JSON.parse(question.body) : nil,
             category: question.category,
             position: positions[question.id] || question.position,
             default: question.default?,
@@ -20,7 +18,9 @@ module Interview
         end
 
         def attrs
-          declared(params, include_missing: false).to_h.symbolize_keys
+          values = declared(params, include_missing: false).to_h.symbolize_keys
+          values[:body] = values[:body].to_json if values.key?(:body)
+          values
         end
       end
 
@@ -44,10 +44,8 @@ module Interview
         params do
           requires :label, type: String
           requires :question, type: String
-          optional :answer, type: String
-          optional :code, type: String
-          optional :language, type: String
           optional :category, type: String
+          optional :body, type: Hash
         end
         post do
           question = current_user.interview_questions.create!(attrs)
@@ -59,10 +57,8 @@ module Interview
           params do
             optional :label, type: String
             optional :question, type: String
-            optional :answer, type: String
-            optional :code, type: String
-            optional :language, type: String
             optional :category, type: String
+            optional :body, type: Hash
           end
           patch do
             question = current_user.interview_questions.find(params[:id])
