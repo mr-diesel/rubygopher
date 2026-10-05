@@ -1,93 +1,75 @@
-# rubygopher
+# RubyGopher
 
+A job-search workbench for Ruby and Go developers, built as a public portfolio project.
+Rails backend, React portal, Go microservices, everything in Docker.
 
+The point of the repository is to show production-grade engineering on a small codebase:
+domain-driven Rails with dry-rb, a Grape API with two authentication realms, an isolated
+code sandbox written in Go, SQL-first schema management, and a real test suite.
 
-## Getting started
+## What it does
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+| Part | Status | Summary |
+|---|---|---|
+| Interview Helper | done | Personal cheat-sheet library: questions grouped by category, rich answers (TipTap documents with syntax-highlighted code blocks), per-user ordering and hiding of shared defaults, admin panel for the default library |
+| Live console | done | Run Ruby snippets from the browser. Plain Ruby runs in **sandboxd**, a Go service inside a locked-down container; the Rails context runs in a fork of the app with live models |
+| Application tracker | schema only | Companies, vacancies, applications, cold outreach and their event history. Next step: an API that lets an external AI assistant (ChatGPT, Claude) keep the journal for you via a personal token |
+| Vacancy aggregator | schema only | Ruby/Go postings from hh.ru, getmatch and Habr Career, deduplicated into canonical vacancies with extracted skills. Planned as Go fetchers publishing to Kafka, consumed by Rails |
+| AI interview trainer | planned | Question generation and answer review through an OpenAI-compatible LLM API |
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+## Architecture
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/mr-diesel/rubygopher.git
-git branch -M main
-git push -uf origin main
+frontend/   React 19 + Vite SPA, JWT auth, talks to /api/v1
+backend/    Rails 8.1 (Ruby 4.0)
+  app/domains/<name>/      business logic by domain: api/ (Grape), operations/ (Dry::Operation), contracts/ (dry-validation)
+  app/controllers/admin_area/   server-rendered admin panel (Devise session)
+  app/models/              ActiveRecord models, shared by all domains
+  db/structure.sql         schema source of truth (Postgres-specific DDL preserved)
+services/
+  sandboxd/   Go: supervises untrusted Ruby snippets (timeout, process-group kill, output cap, concurrency limit)
 ```
 
-## Integrate with your tools
+Decisions worth a look:
 
-* [Set up project integrations](https://gitlab.com/mr-diesel/rubygopher/-/settings/integrations)
+- **Operations, not fat controllers.** Multi-step writes are `Dry::Operation` subclasses with a dry-validation contract; Grape endpoints only map results to HTTP. See `backend/app/domains/identity/operations/sign_up.rb`.
+- **Two auth realms that never cross.** Admins use a Devise session for the Slim admin panel; portal users get a JWT from the Grape API with JTI revocation on logout.
+- **Sandboxed code execution.** The `sandbox` compose service has no route out of its internal network, a read-only filesystem, no capabilities, CPU/memory/pid limits and no secrets. The Go supervisor kills the whole process group on timeout and reports OOM kills distinctly. See `services/sandboxd` and `backend/app/domains/playground`.
+- **SQL schema dump.** `schema_format = :sql`, so partial indexes and FK rules survive round trips.
+- **Tests that do not touch the network.** WebMock stubs sandboxd; the Go supervisor is tested with `sh` instead of Ruby so the tests also run inside the image build.
 
-## Collaborate with your team
+## Stack
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+Ruby 4.0 · Rails 8.1 · PostgreSQL 18 · Redis 8 · Sidekiq 8 · Grape 4 · Devise 5 + devise-jwt · dry-operation / dry-validation / dry-monads · RSpec + FactoryBot + WebMock · React 19 · Vite 8 · TipTap 3 · CodeMirror 6 · @dnd-kit · Go 1.27
 
-## Test and Deploy
+## Running locally
 
-Use the built-in continuous integration in GitLab.
+```bash
+docker compose up
+```
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
+- Portal: http://localhost:5173
+- API: http://localhost:3000/api/v1
+- Admin panel: http://localhost:3000/admin
 
-***
+First run creates the database. Create an admin and sign up a portal user:
 
-# Editing this README
+```bash
+docker compose exec web bin/rails runner 'Admin.create!(email: "admin@example.com", password: "password123")'
+curl -X POST localhost:3000/api/v1/signup -H 'Content-Type: application/json' \
+     -d '{"email":"me@example.com","password":"password123"}'
+```
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+The console is enabled in development only; set `PLAYGROUND_CONSOLE=true` to enable it elsewhere, and only behind the sandbox.
 
-## Suggestions for a good README
+## Tests and checks
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+```bash
+docker compose run --rm web bundle exec rspec     # backend specs
+docker compose run --rm web bin/ci                # rubocop, bundler-audit, importmap audit, brakeman
+cd services/sandboxd && go test ./...             # Go unit tests (also run during the image build)
+```
 
 ## License
-For open source projects, say how it is licensed.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+MIT, see [LICENSE](LICENSE).
