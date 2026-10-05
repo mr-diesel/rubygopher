@@ -38,6 +38,7 @@ services:
     environment:
       <<: *backend_env
       SANDBOX_URL: http://sandbox:8080
+      SANDBOX_TOKEN: ${SANDBOX_TOKEN:-dev-sandbox-token}
     ports:
       - "3000:3000"
     stdin_open: true                 # ┐ needed for the debugger (debug/binding.b)
@@ -47,36 +48,67 @@ services:
       - sandbox
 
   # Runs untrusted console snippets; every setting below is about containing them.
+  # The Rails context boots the app from the read-only mounts against sandbox_db.
   sandbox:
     build:
       context: .
       dockerfile: services/sandboxd/Dockerfile
     image: rubygopher_sandboxd:dev
     read_only: true
+    volumes:
+      - ./backend:/app:ro
+      - bundle_cache:/usr/local/bundle:ro
+      - /dev/null:/app/config/master.key:ro   # the app code is mounted, the secrets are not
     tmpfs:
-      - /tmp:size=64m,mode=1777
+      - /tmp:size=256m,mode=1777
+      - /app/tmp:size=256m,mode=1777
+      - /app/log:size=64m,mode=1777
     cap_drop:
       - ALL
     security_opt:
       - no-new-privileges:true
-    pids_limit: 64
-    mem_limit: 256m
-    cpus: "1.0"
+    pids_limit: 256
+    mem_limit: 1g
+    cpus: "2.0"
+    environment:
+      SANDBOX_TOKEN: ${SANDBOX_TOKEN:-dev-sandbox-token}
+      RAILS_ENV: development
+      RAILS_MASTER_KEY_PATH: /nonexistent          # no credentials in the sandbox, by design
+      SECRET_KEY_BASE: sandbox-only-not-a-secret
+      DEVISE_JWT_SECRET_KEY: sandbox-only-not-a-secret
+      DB_HOST: sandbox_db
+      DB_USERNAME: console
+      DB_PASSWORD: ${SANDBOX_CONSOLE_PASSWORD:-console}
+    depends_on:
+      sandbox_db:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      test: ["CMD", "sandboxd", "-check"]
       interval: 10s
       timeout: 3s
       retries: 3
     networks:
       - sandbox
 
-  jobs:
-    <<: *backend
-    command: bash -c "bundle check || bundle install; bundle exec sidekiq -C config/sidekiq.yml"
-
-  css:
-    <<: *backend
-    command: bash -c "bundle check || bundle install; bin/rails dartsass:watch"
+  # Read-only copy of the development database for the console's Rails context.
+  # Fill it with bin/sandbox-db-sync from the host.
+  sandbox_db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${SANDBOX_DB_PASSWORD:-sandbox}
+      POSTGRES_DB: rubygopher_development
+      SANDBOX_CONSOLE_PASSWORD: ${SANDBOX_CONSOLE_PASSWORD:-console}
+    volumes:
+      - ./services/sandboxd/db-init:/docker-entrypoint-initdb.d:ro
+      - sandbox_pg_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sandbox
 
   frontend:
     image: node:26-alpine
@@ -120,6 +152,7 @@ services:
 volumes:
   bundle_cache:
   postgres18_data:
+  sandbox_pg_data:
   redis_data:
   frontend_node_modules:
 

@@ -56,6 +56,9 @@ module Backend
     # Run Active Job through Sidekiq.
     config.active_job.queue_adapter = :sidekiq
 
+    # The console sandbox mounts the app without secrets and boots with no credentials at all.
+    config.credentials.key_path = ENV["RAILS_MASTER_KEY_PATH"] if ENV["RAILS_MASTER_KEY_PATH"].present?
+
     # Grape APIs are mounted in routes.rb by constant. Rails unloads those constants on
     # every code reload, leaving a stale mount that raises on the next request. Re-draw
     # the routes whenever any app/*.rb changes so the fresh Grape classes get mounted.

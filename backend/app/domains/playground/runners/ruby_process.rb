@@ -11,7 +11,7 @@ module Playground
       # verdict as JSON, and the snippet itself travels in a file to dodge shell quoting.
       BOOT = "print JSON.generate(Playground::Evaluator.run(File.read(ARGV[0])))".freeze
 
-      def self.call(code, timeout:)
+      def self.call(code, timeout:, context: nil)
         file = Tempfile.new([ "console", ".rb" ])
         file.write(code)
         file.flush

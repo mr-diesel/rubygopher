@@ -2,11 +2,14 @@ package api
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"io"
 	"log/slog"
 	"net/http"
+	"slices"
+	"strings"
 	"time"
 
 	"rubygopher/sandboxd/internal/sandbox"
@@ -19,7 +22,12 @@ const (
 )
 
 type Runner interface {
-	Run(ctx context.Context, code string, timeout time.Duration) (sandbox.Result, error)
+	Run(ctx context.Context, code, context string, timeout time.Duration) (sandbox.Result, error)
+}
+
+type Config struct {
+	MaxParallel int
+	Token       string
 }
 
 type evalRequest struct {
@@ -37,13 +45,14 @@ type evalResponse struct {
 type handler struct {
 	runner Runner
 	logger *slog.Logger
+	token  string
 	slots  chan struct{}
 }
 
-// Beyond maxParallel concurrent snippets the handler answers 503 instead of
+// Beyond MaxParallel concurrent snippets the handler answers 503 instead of
 // queueing, so a burst cannot pile up processes behind the container limits.
-func NewHandler(runner Runner, logger *slog.Logger, maxParallel int) http.Handler {
-	h := &handler{runner: runner, logger: logger, slots: make(chan struct{}, maxParallel)}
+func NewHandler(runner Runner, logger *slog.Logger, cfg Config) http.Handler {
+	h := &handler{runner: runner, logger: logger, token: cfg.Token, slots: make(chan struct{}, cfg.MaxParallel)}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) })
@@ -52,6 +61,11 @@ func NewHandler(runner Runner, logger *slog.Logger, maxParallel int) http.Handle
 }
 
 func (h *handler) eval(w http.ResponseWriter, r *http.Request) {
+	if !h.authorized(r) {
+		writeError(w, http.StatusUnauthorized, "invalid sandbox token")
+		return
+	}
+
 	req, err := decode(r)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -67,9 +81,9 @@ func (h *handler) eval(w http.ResponseWriter, r *http.Request) {
 	}
 
 	started := time.Now()
-	result, err := h.runner.Run(r.Context(), req.Code, time.Duration(req.Timeout)*time.Second)
+	result, err := h.runner.Run(r.Context(), req.Code, req.Context, time.Duration(req.Timeout)*time.Second)
 	if err != nil {
-		h.logger.Error("evaluation failed", "err", err)
+		h.logger.Error("evaluation failed", "context", req.Context, "err", err)
 		writeError(w, http.StatusInternalServerError, "sandbox failed to run the snippet")
 		return
 	}
@@ -79,6 +93,14 @@ func (h *handler) eval(w http.ResponseWriter, r *http.Request) {
 		Context:    req.Context,
 		DurationMS: time.Since(started).Milliseconds(),
 	})
+}
+
+func (h *handler) authorized(r *http.Request) bool {
+	if h.token == "" {
+		return true
+	}
+	given := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+	return subtle.ConstantTimeCompare([]byte(given), []byte(h.token)) == 1
 }
 
 func decode(r *http.Request) (evalRequest, error) {
@@ -95,7 +117,7 @@ func decode(r *http.Request) (evalRequest, error) {
 		return req, errors.New("code exceeds 64 KiB")
 	case req.Context == "":
 		req.Context = "ruby"
-	case req.Context != "ruby":
+	case !slices.Contains(sandbox.Contexts(), req.Context):
 		return req, errors.New("unsupported context: " + req.Context)
 	}
 

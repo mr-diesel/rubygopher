@@ -1,5 +1,6 @@
 require "json"
 require "stringio"
+require "timeout"
 
 module Playground
   # Evaluates one snippet and returns a plain hash — no Rails APIs used anywhere
@@ -44,7 +45,10 @@ module Playground
       end
     end
 
-    def self.run(code)
+    # `timeout` is enforced from inside the process so the output printed before the
+    # cut-off survives; the runner's hard kill remains the backstop for snippets that
+    # rescue Timeout::Error or block in C.
+    def self.run(code, timeout: nil)
       captured = CappedOutput.new(MAX_OUTPUT)
       original_stdout = $stdout
       original_stderr = $stderr
@@ -53,8 +57,10 @@ module Playground
 
       result =
         begin
-          TOPLEVEL_BINDING.eval(code, "(console)", 1)
+          evaluate(code, timeout)
           {}
+        rescue Timeout::Error
+          { error: { class: "Timeout", message: "execution exceeded #{timeout}s" } }
         rescue Exception => e # rubocop:disable Lint/RescueException -- SyntaxError/NoMemoryError are results here, not crashes
           { error: describe(e) }
         end
@@ -63,6 +69,12 @@ module Playground
     ensure
       $stdout = original_stdout
       $stderr = original_stderr
+    end
+
+    def self.evaluate(code, timeout)
+      return TOPLEVEL_BINDING.eval(code, "(console)", 1) unless timeout
+
+      Timeout.timeout(timeout) { TOPLEVEL_BINDING.eval(code, "(console)", 1) }
     end
 
     def self.describe(error)

@@ -19,6 +19,13 @@ RSpec.describe Playground::Evaluator do
       expect(result[:output]).to end_with("… truncated (100000 more bytes)")
     end
 
+    it "stops a snippet at the given timeout and keeps what it printed" do
+      result = described_class.run("puts 'before'; sleep 5", timeout: 1)
+
+      expect(result[:error]).to include(class: "Timeout")
+      expect(result[:output]).to eq("before\n")
+    end
+
     it "keeps the first bytes of a capped stream" do
       result = described_class.run("print 'start'; print 'x' * #{described_class::MAX_OUTPUT}")
 

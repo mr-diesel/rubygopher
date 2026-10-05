@@ -11,7 +11,7 @@ module Playground
         Process.respond_to?(:fork)
       end
 
-      def self.call(code, timeout:)
+      def self.call(code, timeout:, context: nil)
         return unsupported unless available?
 
         reader, writer = IO.pipe

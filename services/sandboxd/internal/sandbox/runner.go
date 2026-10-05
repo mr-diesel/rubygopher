@@ -7,6 +7,7 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -27,10 +28,24 @@ type Error struct {
 type Runner struct {
 	Ruby      string
 	Evaluator string
+	RailsRoot string
 	MaxOutput int64
 }
 
-const boot = "print JSON.generate(Playground::Evaluator.run(File.read(ARGV[0])))"
+const boot = "print JSON.generate(Playground::Evaluator.run(File.read(ARGV[0]), timeout: Integer(ARGV[1])))"
+
+// The evaluator enforces the snippet timeout itself; the process deadline only adds
+// room for interpreter boot and acts as the backstop when the snippet swallows it.
+var bootAllowance = map[string]time.Duration{
+	"ruby":  3 * time.Second,
+	"rails": 20 * time.Second,
+}
+
+var railsEnv = []string{
+	"RAILS_ENV", "RAILS_MASTER_KEY_PATH", "RAILS_MAX_THREADS", "SECRET_KEY_BASE", "DEVISE_JWT_SECRET_KEY",
+	"DB_HOST", "DB_PORT", "DB_USERNAME", "DB_PASSWORD",
+	"BUNDLE_PATH", "BUNDLE_APP_CONFIG", "GEM_HOME", "GEM_PATH",
+}
 
 const stderrTail = 2000
 
@@ -39,7 +54,14 @@ var (
 	errKilled  = errors.New("sandbox: killed")
 )
 
-func (r *Runner) Run(ctx context.Context, code string, timeout time.Duration) (Result, error) {
+func Contexts() []string { return []string{"ruby", "rails"} }
+
+func (r *Runner) Run(ctx context.Context, code, context string, timeout time.Duration) (Result, error) {
+	allowance, ok := bootAllowance[context]
+	if !ok {
+		return Result{}, errors.New("sandbox: unknown context " + context)
+	}
+
 	file, err := os.CreateTemp("", "snippet-*.rb")
 	if err != nil {
 		return Result{}, err
@@ -53,7 +75,7 @@ func (r *Runner) Run(ctx context.Context, code string, timeout time.Duration) (R
 		return Result{}, err
 	}
 
-	stdout, stderr, err := execute(ctx, timeout, r.MaxOutput, r.Ruby, "-r", r.Evaluator, "-e", boot, file.Name())
+	stdout, stderr, err := execute(ctx, timeout+allowance, r.MaxOutput, r.command(context, file.Name(), timeout))
 	switch {
 	case errors.Is(err, errTimeout):
 		return timedOut(timeout), nil
@@ -65,14 +87,45 @@ func (r *Runner) Run(ctx context.Context, code string, timeout time.Duration) (R
 	return parse(stdout, stderr), nil
 }
 
+type spec struct {
+	dir  string
+	env  []string
+	argv []string
+}
+
+func (r *Runner) command(context, file string, timeout time.Duration) spec {
+	seconds := strconv.Itoa(int(timeout / time.Second))
+	env := []string{"PATH=/usr/local/bin:/usr/bin:/bin", "LANG=C.UTF-8", "HOME=/tmp"}
+
+	if context == "rails" {
+		return spec{
+			dir:  r.RailsRoot,
+			env:  append(env, passthrough(railsEnv)...),
+			argv: []string{"bin/rails", "runner", boot, file, seconds},
+		}
+	}
+	return spec{env: env, argv: []string{r.Ruby, "-r", r.Evaluator, "-e", boot, file, seconds}}
+}
+
+func passthrough(keys []string) []string {
+	var env []string
+	for _, key := range keys {
+		if value, ok := os.LookupEnv(key); ok {
+			env = append(env, key+"="+value)
+		}
+	}
+	return env
+}
+
 // A non-zero exit is not an error here: the evaluator already turned the snippet's
 // failure into JSON. Only infrastructure problems come back as err.
-func execute(ctx context.Context, timeout time.Duration, maxOutput int64, name string, args ...string) ([]byte, []byte, error) {
-	ctx, cancel := context.WithTimeout(ctx, timeout)
+func execute(ctx context.Context, deadline time.Duration, maxOutput int64, s spec) ([]byte, []byte, error) {
+	ctx, cancel := context.WithTimeout(ctx, deadline)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, name, args...)
-	cmd.Env = []string{"PATH=/usr/local/bin:/usr/bin:/bin", "LANG=C.UTF-8", "HOME=/tmp"}
+	cmd := exec.CommandContext(ctx, s.argv[0], s.argv[1:]...)
+	cmd.Dir = s.dir
+	cmd.Env = s.env
 	// Own process group: the kill reaches whatever the snippet forked, not just ruby.
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Cancel = func() error { return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL) }

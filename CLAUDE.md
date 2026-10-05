@@ -13,7 +13,7 @@ Backend is `backend/` (Rails 8.1, Ruby 4.0.7), frontend is `frontend/` (React 19
 
 ## Running the stack
 
-Everything runs through Docker Compose (services: `web` Rails :3000, `jobs` Sidekiq, `css` dartsass watch, `frontend` Vite :5173, `db` Postgres 18 :5432, `redis` Redis 8, `sandbox` Go sandboxd on an internal network):
+Everything runs through Docker Compose (services: `web` Rails :3000, `jobs` Sidekiq, `css` dartsass watch, `frontend` Vite :5173, `db` Postgres 18 :5432, `redis` Redis 8, and on an internal network `sandbox` Go sandboxd + `sandbox_db` read-only Postgres copy):
 
 ```bash
 docker compose up            # boots the whole stack; gems/npm install on first run
@@ -72,22 +72,27 @@ Interview questions are the current core domain:
 - Answer content is a **TipTap document stored as JSON** in `interview_questions.body`. The API parses/serializes it; `InterviewQuestion.legacy_to_body` converts old answer/code/language columns into TipTap JSON.
 
 ### Playground (live-coding console)
-`POST /api/v1/console/eval` runs a user-supplied Ruby snippet and returns `{output, error, context, duration_ms}` — this is what the SPA's "Rails console" tab talks to. Only captured stdout/stderr comes back: the value of the last expression is deliberately not echoed (no implicit `inspect` of whatever the snippet happened to return), so print with `p`/`pp`/`puts`. Two contexts:
+`POST /api/v1/console/eval` runs a user-supplied Ruby snippet and returns `{output, error, context, duration_ms}` — this is what the SPA's "Rails console" tab talks to. Only captured stdout/stderr comes back: the value of the last expression is deliberately not echoed, so print with `p`/`pp`/`puts`. The endpoint requires auth, caps the snippet at 64 KiB (`Playground::Runner::MAX_CODE_LENGTH`) and rate-limits per user (`Playground::RateLimit`: token bucket in Redis, refilled and spent atomically by a Lua script; 429 with `Retry-After`).
 
-- `rails` — `Playground::Runners::RailsProcess` **forks** the Puma worker, so Rails is already booted and models/ActiveRecord are live. The child re-establishes its own DB pool (never writes to the parent's inherited sockets) and `exit!`s to skip at_exit hooks.
-- `ruby` — with `SANDBOX_URL` set (the compose default), `Playground::Runners::Sandbox` POSTs the snippet to **sandboxd** (`services/sandboxd`, Go): a container with no network route out, read-only filesystem, dropped capabilities, CPU/memory/pids limits and no secrets. Without `SANDBOX_URL`, `Playground::Runners::RubyProcess` spawns a bare `ruby` subprocess locally via `Bundler.with_unbundled_env`.
+With `SANDBOX_URL` set (the compose default) **both contexts** go through `Playground::Runners::Sandbox` to **sandboxd** (`services/sandboxd`, Go), authenticated with the shared `SANDBOX_TOKEN`:
 
-All runners share `Playground::Evaluator`, which must stay **free of Rails APIs**: the plain-Ruby runner loads that very file with `ruby -r`, and the sandbox image copies it in at build time (`services/sandboxd/Dockerfile`, built from the repo root). Every run is a throwaway process, so nothing (locals, globals, `$stdout` swaps) carries over between runs, and the timeout kills runaways.
+- `ruby` — bare `ruby -r evaluator.rb` inside the sandbox container.
+- `rails` — `bin/rails runner` inside the sandbox container. The app is bind-mounted read-only with `/dev/null` over `config/master.key` and `RAILS_MASTER_KEY_PATH=/nonexistent` (see `config/application.rb`), so it boots with empty credentials; `SECRET_KEY_BASE` and `DEVISE_JWT_SECRET_KEY` are dummy env values. It connects to `sandbox_db`, a separate Postgres with a copy of the dev database (`bin/sandbox-db-sync` from the host) through the `console` role: `default_transaction_read_only`, `statement_timeout = 5s`, SELECT-only (`services/sandboxd/db-init`). Boot is ~0.5s with a warm bootsnap cache in tmpfs.
 
-sandboxd itself: `main.go` wires the HTTP server and graceful shutdown; `internal/api` validates `POST /eval` (`{code, context: "ruby", timeout}`) and caps concurrency with a semaphore (503 when full); `internal/sandbox` writes the snippet to a temp file, runs `ruby -r evaluator.rb` in its own process group, kills the whole group on timeout and caps captured output. `go test ./...` runs on the host (Go 1.27) and again inside the Docker build.
+Without `SANDBOX_URL` (tests, bare local dev) the local runners are used: `Runners::RailsProcess` forks the Puma worker (re-establishing its own DB pool, `exit!` to skip at_exit hooks) and `Runners::RubyProcess` spawns `ruby` via `Bundler.with_unbundled_env`. Request specs stub `Sandbox.url` to nil to force this path.
 
-Arbitrary code execution is gated: `Playground::Runner.enabled?` is true only in `Rails.env.local?` (dev/test) or with `PLAYGROUND_CONSOLE=true`. Never expose the endpoint on a public deployment.
+All runners share `Playground::Evaluator`, which must stay **free of Rails APIs** (the plain-Ruby runner loads it with `ruby -r`). It enforces the snippet timeout from inside the process (so output printed before the cut-off survives) and caps captured output at write time; the supervisor's hard kill is the backstop.
+
+sandboxd: `main.go` wires the HTTP server, graceful shutdown and the `-check` healthcheck flag; `internal/api` validates `POST /eval` (`{code, context: ruby|rails, timeout}`), checks the bearer token and caps concurrency with a semaphore (503 when full); `internal/sandbox` writes the snippet to a temp file, builds the per-context command (rails gets only an allow-listed env), runs it in its own process group with a boot allowance on top of the timeout, kills the whole group, caps output and distinguishes OOM kills. `go test ./...` runs on the host (Go 1.27) and again inside the Docker build. The sandbox container hardening lives in `docker-compose.yml`.
+
+Arbitrary code execution is gated: `Playground::Runner.enabled?` is true only in `Rails.env.local?` (dev/test) or with `PLAYGROUND_CONSOLE=true`. Never expose the endpoint without the sandbox.
 
 ### Sandbox service commands
 ```bash
 cd services/sandboxd && go test ./... && go vet ./...   # unit tests on the host
 docker compose build sandbox                            # image build also runs the Go tests
-docker compose up -d sandbox                            # then web talks to http://sandbox:8080
+docker compose up -d sandbox                            # starts sandbox_db too; web talks to http://sandbox:8080
+bin/sandbox-db-sync                                     # copy the dev database into sandbox_db (host side)
 ```
 
 ### Background jobs

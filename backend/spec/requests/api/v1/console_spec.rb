@@ -14,6 +14,12 @@ RSpec.describe "API V1 Console", type: :request do
   end
 
   describe "POST /api/v1/console/eval" do
+    before do
+      allow(Playground::RateLimit).to receive(:consume).and_return(Playground::RateLimit::Verdict.new(allowed: true, retry_after: 0))
+      # The compose environment points at the sandbox; these examples exercise the local runners.
+      allow(Playground::Runners::Sandbox).to receive(:url).and_return(nil)
+    end
+
     it "requires authentication" do
       post "/api/v1/console/eval", params: { code: "1 + 1" }, as: :json
 
@@ -30,6 +36,22 @@ RSpec.describe "API V1 Console", type: :request do
       post "/api/v1/console/eval", params: { code: "1", context: "python" }, headers: auth_headers, as: :json
 
       expect(response).to have_http_status(:bad_request)
+    end
+
+    it "rejects a snippet over the size limit" do
+      post "/api/v1/console/eval", params: { code: "x" * (Playground::Runner::MAX_CODE_LENGTH + 1) }, headers: auth_headers, as: :json
+
+      expect(response).to have_http_status(:bad_request)
+    end
+
+    it "is refused when the user is over the rate limit" do
+      allow(Playground::RateLimit).to receive(:consume).with(user)
+        .and_return(Playground::RateLimit::Verdict.new(allowed: false, retry_after: 1.4))
+
+      post "/api/v1/console/eval", params: { code: "1 + 1" }, headers: auth_headers, as: :json
+
+      expect(response).to have_http_status(:too_many_requests)
+      expect(response.headers["Retry-After"]).to eq("2")
     end
 
     it "is refused when the console is disabled" do
@@ -99,9 +121,6 @@ RSpec.describe "API V1 Console", type: :request do
     end
 
     context "in the ruby context" do
-      # The compose environment points at the sandbox; these examples exercise the local runner.
-      before { allow(Playground::Runners::Sandbox).to receive(:url).and_return(nil) }
-
       it "evaluates plain Ruby" do
         body = run("p [3, 1, 2].sort", context: "ruby")
 
@@ -135,11 +154,10 @@ RSpec.describe "API V1 Console", type: :request do
           expect(body["context"]).to eq("ruby")
         end
 
-        it "keeps the rails context on the local fork" do
-          body = run("p 1 + 1")
+        it "delegates the rails context to the sandbox as well" do
+          run("p 1 + 1")
 
-          expect(body["output"]).to eq("2\n")
-          expect(a_request(:post, "http://sandbox:8080/eval")).not_to have_been_made
+          expect(a_request(:post, "http://sandbox:8080/eval").with(body: hash_including("context" => "rails"))).to have_been_made
         end
       end
     end

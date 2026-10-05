@@ -1,11 +1,12 @@
 // sandboxd runs untrusted Ruby snippets for the RubyGopher console inside a
 // locked-down container. What the snippet printed is decided by the Rails
-// evaluator.rb copied into the image, so every runner reports the same shape.
+// evaluator.rb (the app is mounted read-only), so every runner reports the same shape.
 package main
 
 import (
 	"context"
 	"errors"
+	"flag"
 	"log/slog"
 	"net/http"
 	"os"
@@ -18,17 +19,25 @@ import (
 )
 
 func main() {
+	check := flag.Bool("check", false, "probe the running server and exit (for the container healthcheck)")
+	flag.Parse()
+	addr := envOr("SANDBOX_ADDR", ":8080")
+	if *check {
+		os.Exit(healthcheck("http://127.0.0.1" + addr + "/healthz"))
+	}
+
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
 	runner := &sandbox.Runner{
 		Ruby:      envOr("SANDBOX_RUBY", "ruby"),
-		Evaluator: envOr("SANDBOX_EVALUATOR", "/opt/sandbox/evaluator.rb"),
+		Evaluator: envOr("SANDBOX_EVALUATOR", "/app/app/domains/playground/evaluator.rb"),
+		RailsRoot: envOr("SANDBOX_RAILS_ROOT", "/app"),
 		MaxOutput: 1 << 20,
 	}
 
 	server := &http.Server{
-		Addr:              envOr("SANDBOX_ADDR", ":8080"),
-		Handler:           api.NewHandler(runner, logger, 4),
+		Addr:              addr,
+		Handler:           api.NewHandler(runner, logger, api.Config{MaxParallel: 4, Token: os.Getenv("SANDBOX_TOKEN")}),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
@@ -51,6 +60,16 @@ func main() {
 	if err := server.Shutdown(shutdownCtx); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		logger.Error("shutdown failed", "err", err)
 	}
+}
+
+func healthcheck(url string) int {
+	client := &http.Client{Timeout: 2 * time.Second}
+	resp, err := client.Get(url)
+	if err != nil || resp.StatusCode != http.StatusNoContent {
+		return 1
+	}
+	resp.Body.Close()
+	return 0
 }
 
 func envOr(key, fallback string) string {

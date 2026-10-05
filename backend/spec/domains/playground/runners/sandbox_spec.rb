@@ -2,8 +2,11 @@ require "rails_helper"
 
 RSpec.describe Playground::Runners::Sandbox do
   let(:url) { "http://sandbox:8080" }
+  let(:token) { nil }
 
-  before { allow(described_class).to receive(:url).and_return(url) }
+  before do
+    allow(described_class).to receive_messages(url: url, token: token)
+  end
 
   describe ".configured?" do
     it "is true when SANDBOX_URL is set" do
@@ -20,17 +23,29 @@ RSpec.describe Playground::Runners::Sandbox do
   end
 
   describe ".call" do
-    subject(:result) { described_class.call("p 1 + 1", timeout: 3) }
+    subject(:result) { described_class.call("p 1 + 1", context: "rails", timeout: 3) }
 
     context "when the sandbox answers" do
       before do
         stub_request(:post, "#{url}/eval")
-          .with(body: { code: "p 1 + 1", context: "ruby", timeout: 3 })
-          .to_return(status: 200, body: { output: "2\n", error: nil, context: "ruby", duration_ms: 12 }.to_json)
+          .with(body: { code: "p 1 + 1", context: "rails", timeout: 3 })
+          .to_return(status: 200, body: { output: "2\n", error: nil, context: "rails", duration_ms: 12 }.to_json)
       end
 
       it "returns only output and error" do
         expect(result).to eq(output: "2\n", error: nil)
+      end
+    end
+
+    context "with a shared token" do
+      let(:token) { "secret" }
+
+      before { stub_request(:post, "#{url}/eval").to_return(status: 200, body: { output: "", error: nil }.to_json) }
+
+      it "sends it as a bearer token" do
+        result
+
+        expect(a_request(:post, "#{url}/eval").with(headers: { "Authorization" => "Bearer secret" })).to have_been_made
       end
     end
 
