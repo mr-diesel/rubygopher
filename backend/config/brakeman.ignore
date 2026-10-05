@@ -1,0 +1,15 @@
+{
+  "ignored_warnings": [
+    {
+      "fingerprint": "250e012f09ec92ef2330452e1e0344ed284a911072694e6ac2117644923cb71e",
+      "check": "Evaluation",
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "message": "Dynamic code evaluation",
+      "file": "app/domains/playground/evaluator.rb",
+      "line": 25,
+      "note": "Intentional: this IS the live-coding console. The eval only ever runs in a throwaway process (fork or bare `ruby` subprocess) that is killed after a timeout, it requires an authenticated user, and Playground::Runner.enabled? keeps the endpoint off outside dev/test unless PLAYGROUND_CONSOLE=true."
+    }
+  ],
+  "brakeman_version": "8.0.5"
+}

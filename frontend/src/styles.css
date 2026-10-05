@@ -9,6 +9,8 @@
   --btn-hover: #565b5e;
   --danger: #c75450;
   --accent: #cc7832;
+  --ok: #6a8759;        /* returned values, successful runs */
+  --header-h: 58px;     /* app-header height — full-height panes subtract it */
 }
 
 * { box-sizing: border-box; }
@@ -84,14 +86,26 @@ body {
 .app-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.5rem;
+  gap: 1.5rem;
+  height: var(--header-h);
+  padding: 0 1.5rem;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
   color: var(--text);
 }
 
-.app-header button {
+/* Center every label inside its own box: with the default line-height a glyph like
+   ▶ or a taller cap-height makes the text ride high in the padded button. */
+.app-header button,
+.console-bar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.app-header .logout {
+  margin-left: auto;
   background: var(--danger);
   color: #fff;
   border: 0;
@@ -100,8 +114,34 @@ body {
   cursor: pointer;
 }
 
+/* Segmented control — shared by the header tabs and the console context switch */
+.segmented {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.15rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.segmented button {
+  background: none;
+  border: 0;
+  color: var(--text-dim);
+  padding: 0.25rem 0.7rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.segmented button:hover { color: var(--text); }
+.segmented button.active { background: var(--code-bg); color: #fff; }
+
+/* Header tabs are the same control, one notch larger */
+.tabs button { padding: 0.35rem 0.9rem; font-size: 0.85rem; }
+
 /* three-column layout: categories | question buttons | question & answer */
-.helper { display: flex; height: calc(100vh - 58px); }
+.helper { display: flex; height: calc(100vh - var(--header-h)); }
 
 .cat-col,
 .q-col {
@@ -275,3 +315,97 @@ body {
 }
 
 .rich-content .ProseMirror { padding: 0; min-height: 0; background: transparent; }
+
+/* Rails console: editor on the left, evaluation result on the right */
+.console {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--header-h));
+}
+
+.console-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+
+/* same metrics as the segmented control next to it */
+.console-bar .run-btn {
+  background: var(--ok);
+  color: #fff;
+  border: 0;
+  padding: 0.3rem 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.console-bar .run-btn:disabled { opacity: 0.6; cursor: default; }
+
+.console-bar .ghost {
+  margin-left: auto; /* keeps "Clear output" pinned to the right edge of the bar */
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.35rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.console-timing {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.console-panes { display: flex; flex: 1; min-height: 0; }
+
+.console-pane { min-width: 0; overflow: auto; }
+
+/* CodeMirror fills its pane instead of growing with the document */
+.console-pane .code-editor,
+.console-pane .cm-editor { height: 100%; }
+.console-pane .cm-scroller { font-family: ui-monospace, monospace; font-size: 0.9rem; }
+
+.console-divider {
+  width: 5px;
+  flex-shrink: 0;
+  background: var(--border);
+  cursor: col-resize;
+}
+
+.console-divider:hover { background: var(--btn-hover); }
+
+.console-result {
+  background: var(--code-bg);
+  padding: 0.75rem 1rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.9rem;
+}
+
+.console-result pre {
+  margin: 0 0 0.6rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.out-stdout { color: var(--text); }
+.out-dim { color: var(--text-dim); }
+.out-error { color: var(--danger); }
+
+.out-error summary {
+  cursor: pointer;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  margin-bottom: 0.4rem;
+}
+
+.out-error details pre { color: var(--text-dim); font-size: 0.8rem; }
