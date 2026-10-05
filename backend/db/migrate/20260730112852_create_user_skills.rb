@@ -8,7 +8,7 @@ class CreateUserSkills < ActiveRecord::Migration[8.1]
 
       t.timestamps
 
-      t.index [:user_id, :skill_id], unique: true
+      t.index [ :user_id, :skill_id ], unique: true
     end
   end
 end

@@ -8,7 +8,7 @@ module Playground
     CONTEXTS = %w[rails ruby].freeze
     DEFAULT_TIMEOUT = 5
 
-    RUNNERS = {
+    LOCAL_RUNNERS = {
       "rails" => Runners::RailsProcess, # fork of this process — models and the database are live
       "ruby" => Runners::RubyProcess    # bare `ruby` subprocess — no Rails, no database
     }.freeze
@@ -18,7 +18,7 @@ module Playground
     end
 
     def self.call(code:, context: "rails", timeout: DEFAULT_TIMEOUT)
-      runner = RUNNERS.fetch(context)
+      runner = runner_for(context)
       started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       result = runner.call(code, timeout: timeout)
       elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
@@ -29,6 +29,12 @@ module Playground
         context: context,
         duration_ms: (elapsed * 1000).round
       }
+    end
+
+    def self.runner_for(context)
+      return Runners::Sandbox if context == "ruby" && Runners::Sandbox.configured?
+
+      LOCAL_RUNNERS.fetch(context)
     end
   end
 end

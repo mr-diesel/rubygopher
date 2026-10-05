@@ -12,7 +12,7 @@ class CreateInterviewQuestions < ActiveRecord::Migration[8.1]
 
       t.timestamps
 
-      t.index [:user_id, :position]
+      t.index [ :user_id, :position ]
     end
   end
 end

@@ -47,7 +47,7 @@ RSpec.describe "API V1 Interview Questions", type: :request do
   describe "PATCH /api/v1/interview_questions/:id" do
     it "updates the user's own body" do
       q = create(:interview_question, user: user)
-      body = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "updated" }] }] }
+      body = { type: "doc", content: [ { type: "paragraph", content: [ { type: "text", text: "updated" } ] } ] }
 
       patch "/api/v1/interview_questions/#{q.id}", params: { body: body }, headers: auth_headers, as: :json
 
@@ -93,12 +93,12 @@ RSpec.describe "API V1 Interview Questions", type: :request do
       q2 = create(:interview_question, user: user)
 
       patch "/api/v1/interview_questions/reorder",
-            params: { ordered_ids: [q2.id, q1.id] }, headers: auth_headers, as: :json
+            params: { ordered_ids: [ q2.id, q1.id ] }, headers: auth_headers, as: :json
 
       expect(response).to have_http_status(:no_content)
 
       get "/api/v1/interview_questions", headers: auth_headers
-      positions = response.parsed_body.to_h { |q| [q["id"], q["position"]] }
+      positions = response.parsed_body.to_h { |q| [ q["id"], q["position"] ] }
       expect(positions[q2.id]).to eq(0)
       expect(positions[q1.id]).to eq(1)
     end

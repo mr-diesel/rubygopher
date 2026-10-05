@@ -89,7 +89,7 @@ module Interview
         get do
           categories = InterviewQuestion.visible_to(current_user).reorder(nil).distinct.pluck(:category)
           orders = current_user.user_category_orders.pluck(:category, :position).to_h
-          categories.sort_by { |c| [orders[c] || Float::INFINITY, c] }
+          categories.sort_by { |c| [ orders[c] || Float::INFINITY, c ] }
         end
 
         params do

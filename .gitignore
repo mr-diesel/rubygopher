@@ -16,3 +16,7 @@
 # Database dumps
 /rubygopher_dump.sql
 *.dump
+
+# Personal Claude Code config (working rules, skills, local permissions)
+/CLAUDE.local.md
+/.claude/

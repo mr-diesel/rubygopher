@@ -7,7 +7,7 @@ class CreateUserCategoryOrders < ActiveRecord::Migration[8.1]
 
       t.timestamps
 
-      t.index [:user_id, :category], unique: true
+      t.index [ :user_id, :category ], unique: true
     end
   end
 end

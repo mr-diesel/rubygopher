@@ -1,0 +1,10 @@
+.git
+.idea
+.claude
+frontend
+backend/tmp
+backend/log
+backend/node_modules
+backend/storage
+*.sql
+*.dump

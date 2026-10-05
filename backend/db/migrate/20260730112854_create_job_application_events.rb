@@ -13,7 +13,7 @@ class CreateJobApplicationEvents < ActiveRecord::Migration[8.1]
       # Append-only log: created_at only, no updated_at (records are immutable).
       t.datetime :created_at, null: false
 
-      t.index [:job_application_id, :occurred_at]
+      t.index [ :job_application_id, :occurred_at ]
     end
   end
 end

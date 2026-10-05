@@ -13,7 +13,7 @@ class CreateVacancyPostings < ActiveRecord::Migration[8.1]
       t.timestamps
 
       # Dedup within a single source (re-sync must not duplicate the same posting).
-      t.index [:source, :external_id], unique: true
+      t.index [ :source, :external_id ], unique: true
     end
   end
 end

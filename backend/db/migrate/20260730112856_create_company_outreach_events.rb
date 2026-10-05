@@ -11,7 +11,7 @@ class CreateCompanyOutreachEvents < ActiveRecord::Migration[8.1]
       t.datetime :changed_at, null: false
       t.datetime :created_at, null: false
 
-      t.index [:company_outreach_id, :changed_at]
+      t.index [ :company_outreach_id, :changed_at ]
     end
   end
 end

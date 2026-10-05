@@ -13,12 +13,39 @@ module Playground
   # deliberately NOT reported: inspecting it is user code with a cost of its own
   # (`User.all` on a fat table), and `p` says exactly what you want to see.
   module Evaluator
-    MAX_OUTPUT = 100_000    # chars of captured stdout/stderr kept
+    MAX_OUTPUT = 100_000    # bytes of captured stdout/stderr kept
     MAX_MESSAGE = 10_000    # chars of an exception message kept
     MAX_BACKTRACE = 12      # frames kept (Rails backtraces are hundreds deep)
 
+    # Stops storing at the limit, so an endless print hits the timeout, not the memory limit.
+    class CappedOutput < StringIO
+      attr_reader :dropped
+
+      def initialize(limit)
+        super()
+        @limit = limit
+        @dropped = 0
+      end
+
+      def write(*chunks)
+        chunks.sum do |chunk|
+          chunk = chunk.to_s
+          room = @limit - size
+          super(chunk.byteslice(0, room)) if room.positive?
+          @dropped += [ chunk.bytesize - room, 0 ].max
+          chunk.bytesize
+        end
+      end
+
+      def report
+        return string if dropped.zero?
+
+        "#{string}\n… truncated (#{dropped} more bytes)"
+      end
+    end
+
     def self.run(code)
-      captured = StringIO.new
+      captured = CappedOutput.new(MAX_OUTPUT)
       original_stdout = $stdout
       original_stderr = $stderr
       $stdout = captured
@@ -32,7 +59,7 @@ module Playground
           { error: describe(e) }
         end
 
-      result.merge(output: clamp(captured.string, MAX_OUTPUT))
+      result.merge(output: clamp(captured.report, MAX_OUTPUT + 100))
     ensure
       $stdout = original_stdout
       $stderr = original_stderr

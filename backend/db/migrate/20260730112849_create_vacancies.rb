@@ -15,7 +15,7 @@ class CreateVacancies < ActiveRecord::Migration[8.1]
 
       t.timestamps
 
-      t.index [:language, :published_at]
+      t.index [ :language, :published_at ]
       # Work queue for the extraction job: only rows not analyzed yet.
       t.index :skills_extracted_at, where: "skills_extracted_at IS NULL",
               name: "index_vacancies_pending_skill_extraction"

@@ -6,7 +6,7 @@ class CreateHiddenInterviewQuestions < ActiveRecord::Migration[8.1]
 
       t.timestamps
 
-      t.index [:user_id, :interview_question_id], unique: true
+      t.index [ :user_id, :interview_question_id ], unique: true
     end
   end
 end

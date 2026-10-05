@@ -1,11 +1,15 @@
 module Identity
   module Operations
-    class SignUp
-      include Dry::Transaction
+    class SignUp < Dry::Operation
+      def call(input)
+        attrs = step validate(input)
+        user = step create_user(attrs)
+        token = step issue_token(user)
 
-      step :validate
-      step :create_user
-      step :issue_token
+        { user: user, token: token }
+      end
+
+      private
 
       def validate(input)
         result = Contracts::SignUpContract.new.call(input)
@@ -19,7 +23,7 @@ module Identity
 
       def issue_token(user)
         token, = Warden::JWTAuth::UserEncoder.new.call(user, :user, nil)
-        Success(user: user, token: token)
+        Success(token)
       end
     end
   end

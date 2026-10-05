@@ -1,4 +1,4 @@
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, useEditorState } from "@tiptap/react";
 import { extensions, emptyDoc } from "../lib/editor";
 
 export default function RichEditor({ value, onChange }) {
@@ -6,6 +6,16 @@ export default function RichEditor({ value, onChange }) {
     extensions,
     content: value || emptyDoc,
     onUpdate: ({ editor }) => onChange(editor.getJSON())
+  });
+  const active = useEditorState({
+    editor,
+    selector: ({ editor }) => ({
+      bold: editor?.isActive("bold"),
+      italic: editor?.isActive("italic"),
+      paragraph: editor?.isActive("paragraph"),
+      codeBlock: editor?.isActive("codeBlock"),
+      bulletList: editor?.isActive("bulletList")
+    })
   });
 
   if (!editor) return null;
@@ -19,11 +29,11 @@ export default function RichEditor({ value, onChange }) {
   return (
     <div className="rich-editor">
       <div className="rich-toolbar">
-        {btn("B", editor.isActive("bold"), () => editor.chain().focus().toggleBold().run())}
-        {btn("i", editor.isActive("italic"), () => editor.chain().focus().toggleItalic().run())}
-        {btn("Text", editor.isActive("paragraph"), () => editor.chain().focus().setParagraph().run())}
-        {btn("</> Code", editor.isActive("codeBlock"), () => editor.chain().focus().toggleCodeBlock().run())}
-        {btn("• List", editor.isActive("bulletList"), () => editor.chain().focus().toggleBulletList().run())}
+        {btn("B", active.bold, () => editor.chain().focus().toggleBold().run())}
+        {btn("i", active.italic, () => editor.chain().focus().toggleItalic().run())}
+        {btn("Text", active.paragraph, () => editor.chain().focus().setParagraph().run())}
+        {btn("</> Code", active.codeBlock, () => editor.chain().focus().toggleCodeBlock().run())}
+        {btn("• List", active.bulletList, () => editor.chain().focus().toggleBulletList().run())}
       </div>
       <EditorContent editor={editor} />
     </div>

@@ -11,7 +11,7 @@ class CreateCompanyOutreaches < ActiveRecord::Migration[8.1]
       t.timestamps
 
       # Can't write to the same company twice (direct outreach without a vacancy).
-      t.index [:user_id, :company_id], unique: true
+      t.index [ :user_id, :company_id ], unique: true
     end
   end
 end

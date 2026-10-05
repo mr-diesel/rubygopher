@@ -14,7 +14,7 @@ x-backend: &backend
   volumes:
     - ./backend:/app:cached          # live code from the host
     - bundle_cache:/usr/local/bundle # gems survive container rebuilds
-  environment:
+  environment: &backend_env
     RAILS_ENV: development
     DB_HOST: db
     DB_USERNAME: postgres
@@ -35,10 +35,40 @@ services:
     # bundle check || bundle install — installs gems only if the lock changed (fast start).
     # Remove the stale pid so the container restarts without "server is already running".
     command: bash -c "bundle check || bundle install; rm -f tmp/pids/server.pid; bin/rails server -b 0.0.0.0 -p 3000"
+    environment:
+      <<: *backend_env
+      SANDBOX_URL: http://sandbox:8080
     ports:
       - "3000:3000"
     stdin_open: true                 # ┐ needed for the debugger (debug/binding.b)
     tty: true                        # ┘
+    networks:
+      - rubygopher
+      - sandbox
+
+  # Runs untrusted console snippets; every setting below is about containing them.
+  sandbox:
+    build:
+      context: .
+      dockerfile: services/sandboxd/Dockerfile
+    image: rubygopher_sandboxd:dev
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: "1.0"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - sandbox
 
   jobs:
     <<: *backend
@@ -49,7 +79,7 @@ services:
     command: bash -c "bundle check || bundle install; bin/rails dartsass:watch"
 
   frontend:
-    image: node:20-alpine
+    image: node:26-alpine
     working_dir: /app
     command: sh -c "npm install && npm run dev"
     volumes:
@@ -61,7 +91,7 @@ services:
       - rubygopher
 
   db:
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -69,7 +99,7 @@ services:
     ports:
       - "5432:5432"                  # exposed to the host — handy for psql/GUI clients
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres18_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -79,7 +109,7 @@ services:
       - rubygopher
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     ports:
       - "6379:6379"
     volumes:
@@ -89,9 +119,11 @@ services:
 
 volumes:
   bundle_cache:
-  postgres_data:
+  postgres18_data:
   redis_data:
   frontend_node_modules:
 
 networks:
   rubygopher:
+  sandbox:
+    internal: true                   # no gateway, no way out

@@ -11,7 +11,7 @@ class InterviewQuestion < ApplicationRecord
   # Questions visible to a user: non-hidden defaults + the user's own.
   scope :visible_to, ->(user) {
     hidden = HiddenInterviewQuestion.where(user_id: user.id).select(:interview_question_id)
-    where(user_id: [nil, user.id]).where.not(id: hidden).ordered
+    where(user_id: [ nil, user.id ]).where.not(id: hidden).ordered
   }
 
   def default?
@@ -34,7 +34,7 @@ class InterviewQuestion < ApplicationRecord
     end
 
     if code.present?
-      content << { type: "codeBlock", attrs: { language: language }, content: [{ type: "text", text: code }] }
+      content << { type: "codeBlock", attrs: { language: language }, content: [ { type: "text", text: code } ] }
     end
 
     content << { type: "paragraph" } if content.empty?

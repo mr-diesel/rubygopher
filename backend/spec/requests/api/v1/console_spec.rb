@@ -99,6 +99,9 @@ RSpec.describe "API V1 Console", type: :request do
     end
 
     context "in the ruby context" do
+      # The compose environment points at the sandbox; these examples exercise the local runner.
+      before { allow(Playground::Runners::Sandbox).to receive(:url).and_return(nil) }
+
       it "evaluates plain Ruby" do
         body = run("p [3, 1, 2].sort", context: "ruby")
 
@@ -116,6 +119,28 @@ RSpec.describe "API V1 Console", type: :request do
         body = run("sleep 5", context: "ruby", timeout: 1)
 
         expect(body.dig("error", "class")).to eq("Timeout")
+      end
+
+      context "with the sandbox configured" do
+        before do
+          allow(Playground::Runners::Sandbox).to receive(:url).and_return("http://sandbox:8080")
+          stub_request(:post, "http://sandbox:8080/eval")
+            .to_return(status: 200, body: { output: "from sandbox\n", error: nil }.to_json)
+        end
+
+        it "delegates plain Ruby to the sandbox" do
+          body = run("p 1", context: "ruby")
+
+          expect(body["output"]).to eq("from sandbox\n")
+          expect(body["context"]).to eq("ruby")
+        end
+
+        it "keeps the rails context on the local fork" do
+          body = run("p 1 + 1")
+
+          expect(body["output"]).to eq("2\n")
+          expect(a_request(:post, "http://sandbox:8080/eval")).not_to have_been_made
+        end
       end
     end
   end

@@ -18,8 +18,8 @@ class CreateJobApplications < ActiveRecord::Migration[8.1]
 
       t.timestamps
 
-      t.index [:user_id, :status]                    # funnel, "my applications in status X"
-      t.index [:user_id, :vacancy_id], unique: true  # can't apply to the same vacancy twice
+      t.index [ :user_id, :status ]                    # funnel, "my applications in status X"
+      t.index [ :user_id, :vacancy_id ], unique: true  # can't apply to the same vacancy twice
       # Follow-up job scans only live applications awaiting a reminder.
       t.index :next_follow_up_at,
               where: "archived_at IS NULL AND next_follow_up_at IS NOT NULL",
