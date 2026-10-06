@@ -12,6 +12,7 @@ module Tracker
         transaction do
           event = step create_event(outreach, attrs)
           step update_outreach(outreach, event)
+          Events.outreach_status_changed(outreach, event)
           event
         end
       end

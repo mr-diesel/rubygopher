@@ -1,0 +1,47 @@
+{
+  "meta": { "total": 2, "offset": 0, "limit": 20 },
+  "offers": [
+    {
+      "published_at": "2026-09-23T11:10:17.414628",
+      "is_active": true,
+      "position": "Senior Software Engineer (Ruby)",
+      "id": 36425,
+      "offer_type": "vacancy",
+      "salary_display_from": 5500,
+      "salary_display_to": 7000,
+      "salary_currency": "EUR",
+      "offer_description": "<b>Что делать:</b> Развивать архитектуру высоконагруженной Data Quality Platform.",
+      "skills_objects": [
+        { "name": "Ruby", "slug": "ruby", "is_custom": false },
+        { "name": "Ruby on Rails", "slug": "ruby on rails", "is_custom": false },
+        { "name": "PostgreSQL", "slug": "postgresql", "is_custom": false }
+      ],
+      "url": "/vacancies/36425-senior-software-engineer-ruby",
+      "location_items": [
+        { "label": "Европа", "format": "office", "exclude": false },
+        { "label": "Весь мир", "format": "remote", "exclude": false }
+      ],
+      "company": {
+        "id": null,
+        "name": "Компания скрыта (Сфера развлечений) ",
+        "url": "/companies/y4vWMal3-kompaniia-skryta-sfera-razvlechenii"
+      }
+    },
+    {
+      "published_at": "2026-09-17T07:15:15.632089",
+      "is_active": false,
+      "position": "Senior Ruby on Rails Developer",
+      "id": 36284,
+      "offer_type": "vacancy",
+      "salary_display_from": null,
+      "salary_display_to": null,
+      "salary_currency": null,
+      "offer_description": "",
+      "skills_objects": [ { "name": "Ruby on Rails", "slug": "ruby on rails", "is_custom": false } ],
+      "url": "/vacancies/36284-senior-ruby-on-rails-developer",
+      "location_items": [ { "label": "Москва", "format": "office", "exclude": false } ],
+      "company": { "id": 77, "name": "Acme", "url": "/companies/acme" }
+    }
+  ],
+  "filters": { "sp": [ { "value": "golang", "name": "Golang" }, { "value": "ruby", "name": "Ruby" } ] }
+}

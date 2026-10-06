@@ -20,12 +20,15 @@ x-backend: &backend
     DB_USERNAME: postgres
     DB_PASSWORD: postgres
     REDIS_URL: redis://redis:6379/0
+    KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     RAILS_LOG_TO_STDOUT: "true"
   depends_on:
     db:
       condition: service_healthy     # wait until postgres actually accepts connections
     redis:
       condition: service_started
+    kafka:
+      condition: service_healthy
   networks:
     - rubygopher
 
@@ -46,6 +49,19 @@ services:
     networks:
       - rubygopher
       - sandbox
+
+  jobs:
+    <<: *backend
+    command: bash -c "bundle check || bundle install; bundle exec sidekiq -C config/sidekiq.yml"
+
+  # Kafka consumers (vacancies.raw → canonical vacancies). Declares the topics first.
+  karafka:
+    <<: *backend
+    command: bash -c "bundle check || bundle install; bundle exec karafka topics migrate && bundle exec karafka server"
+
+  css:
+    <<: *backend
+    command: bash -c "bundle check || bundle install; bin/rails dartsass:watch"
 
   # Runs untrusted console snippets; every setting below is about containing them.
   # The Rails context boots the app from the read-only mounts against sandbox_db.
@@ -155,6 +171,54 @@ services:
     networks:
       - rubygopher
 
+  # Collects Ruby/Go vacancies from job boards and publishes them to vacancies.raw.
+  fetcher:
+    build:
+      context: .
+      dockerfile: services/fetcher/Dockerfile
+    image: rubygopher_fetcher:dev
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      FETCH_INTERVAL: ${FETCH_INTERVAL:-15m}
+      FETCH_SOURCES: ${FETCH_SOURCES:-hh,habr_career,hirify,getmatch}
+      FETCH_QUERIES: ruby,go
+      HH_TOKEN: ${HH_TOKEN:-}
+      HIRIFY_REMOTE_TYPES: ${HIRIFY_REMOTE_TYPES:-russia}   # hirify lists mostly foreign remote jobs; keep the ones open to Russia
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - rubygopher
+
+  # Single-node KRaft Kafka: kafka:9092 inside the network, localhost:29092 from the host.
+  kafka:
+    image: apache/kafka:4.3.1
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,PLAINTEXT_HOST://:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    ports:
+      - "29092:29092"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    networks:
+      - rubygopher
+
   redis:
     image: redis:8-alpine
     ports:
@@ -167,6 +231,7 @@ services:
 volumes:
   bundle_cache:
   postgres18_data:
+  kafka_data:
   redis_data:
   frontend_node_modules:
 

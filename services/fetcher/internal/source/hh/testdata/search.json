@@ -1,0 +1,30 @@
+{
+  "items": [
+    {
+      "id": "123456",
+      "name": "Senior Ruby Developer",
+      "alternate_url": "https://hh.ru/vacancy/123456",
+      "employer": { "id": "9", "name": "Acme", "alternate_url": "https://hh.ru/employer/9" },
+      "area": { "id": "1", "name": "Москва" },
+      "salary": { "from": 300000, "to": 450000, "currency": "RUR", "gross": false },
+      "schedule": { "id": "remote", "name": "Удаленная работа" },
+      "published_at": "2026-10-05T12:30:00+0300",
+      "snippet": { "requirement": "Ruby, Rails, PostgreSQL", "responsibility": "Backend" }
+    },
+    {
+      "id": "123457",
+      "name": "Go Developer",
+      "alternate_url": "https://hh.ru/vacancy/123457",
+      "employer": { "id": "10", "name": "Globex", "alternate_url": "https://hh.ru/employer/10" },
+      "area": { "id": "2", "name": "Санкт-Петербург" },
+      "salary": null,
+      "schedule": { "id": "fullDay", "name": "Полный день" },
+      "published_at": "2026-10-04T09:00:00+0300",
+      "snippet": { "requirement": null, "responsibility": null }
+    }
+  ],
+  "found": 2,
+  "pages": 1,
+  "page": 0,
+  "per_page": 100
+}

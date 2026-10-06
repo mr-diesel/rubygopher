@@ -385,6 +385,75 @@ ALTER SEQUENCE public.job_applications_id_seq OWNED BY public.job_applications.i
 
 
 --
+-- Name: outbox_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.outbox_events (
+    id bigint NOT NULL,
+    topic character varying NOT NULL,
+    key character varying NOT NULL,
+    event_type character varying NOT NULL,
+    payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    published_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: TABLE outbox_events; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.outbox_events IS 'Transactional outbox: domain events written with the data they describe, relayed to Kafka by Outbox::Jobs::PublishJob';
+
+
+--
+-- Name: COLUMN outbox_events.topic; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.outbox_events.topic IS 'Kafka topic';
+
+
+--
+-- Name: COLUMN outbox_events.key; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.outbox_events.key IS 'Kafka partition key, e.g. user:<id> for per-user ordering';
+
+
+--
+-- Name: COLUMN outbox_events.event_type; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.outbox_events.event_type IS 'e.g. application.recorded';
+
+
+--
+-- Name: COLUMN outbox_events.published_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.outbox_events.published_at IS 'NULL until the relay delivered it to Kafka';
+
+
+--
+-- Name: outbox_events_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.outbox_events_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: outbox_events_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.outbox_events_id_seq OWNED BY public.outbox_events.id;
+
+
+--
 -- Name: schema_migrations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -751,6 +820,13 @@ ALTER TABLE ONLY public.job_applications ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
+-- Name: outbox_events id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.outbox_events ALTER COLUMN id SET DEFAULT nextval('public.outbox_events_id_seq'::regclass);
+
+
+--
 -- Name: skills id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -884,6 +960,14 @@ ALTER TABLE ONLY public.job_application_events
 
 ALTER TABLE ONLY public.job_applications
     ADD CONSTRAINT job_applications_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: outbox_events outbox_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.outbox_events
+    ADD CONSTRAINT outbox_events_pkey PRIMARY KEY (id);
 
 
 --
@@ -1096,6 +1180,13 @@ CREATE INDEX index_job_applications_on_via_posting_id ON public.job_applications
 --
 
 CREATE INDEX index_job_applications_pending_follow_up ON public.job_applications USING btree (next_follow_up_at) WHERE ((archived_at IS NULL) AND (next_follow_up_at IS NOT NULL));
+
+
+--
+-- Name: index_outbox_events_unpublished; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_outbox_events_unpublished ON public.outbox_events USING btree (id) WHERE (published_at IS NULL);
 
 
 --
@@ -1370,6 +1461,7 @@ ALTER TABLE ONLY public.user_skills
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261006113413'),
 ('20261006112738'),
 ('20261006105137'),
 ('20260810091334'),

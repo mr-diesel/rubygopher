@@ -7,7 +7,7 @@ module Tracker
           { id: application.company.id, name: application.company.name }
         end
         expose :vacancy do |application|
-          application.vacancy.slice(:id, :title, :language, :work_mode, :location)
+          application.vacancy.slice(:id, :title, :language, :work_mode, :location).merge(url: application.via_posting&.url)
         end
         expose :events, using: Event, if: { full: true }
       end

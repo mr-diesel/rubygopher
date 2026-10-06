@@ -15,6 +15,7 @@ module Tracker
           step ensure_untracked(user, company)
           outreach = step create_outreach(user, company, attrs)
           step record_event(outreach)
+          Events.outreach_recorded(outreach)
           outreach
         end
       end

@@ -1,0 +1,523 @@
+{
+ "current_page": 1,
+ "data": [
+  {
+   "id": 1212044,
+   "spec_vocab_version": "v4",
+   "main_stack": [
+    "ruby",
+    "postgresql",
+    "clickhouse"
+   ],
+   "slug": "1212044-senior-backend-engineer-ruby",
+   "title": "Senior Backend Engineer (Ruby) (Production Engineering: Tenant Controls)",
+   "original_title": "Senior Backend Engineer (Ruby), Production Engineering:Tenant Controls",
+   "vacancy_score": 7,
+   "company_title": "%hirify_global%",
+   "work_format": [
+    "remote"
+   ],
+   "remote_type": "europe",
+   "remote_restrictions": [
+    "poland"
+   ],
+   "excluded_locations": [],
+   "work_type": "fulltime",
+   "english_level": "b2",
+   "language_requirements": null,
+   "employee_type": [
+    "employment"
+   ],
+   "company_type": "product_company",
+   "vacancy_language": "en",
+   "tldr": "Senior Backend Engineer (Ruby) (Production Engineering: Tenant Controls): Building and evolving backend capabilities and application-level rate-limiting infrastructure for GitLab.com with an accent on architecture, reliability, performance, and production operations. Focus on designing migration-safe backend boundaries, integrating agentic AI into engineering workflows, and solving scalability and incident-response challenges.",
+   "application_instructions": null,
+   "text_mode": null,
+   "user_id": null,
+   "recruiter_meta_id": null,
+   "application_channel": "contacts",
+   "suppress_distribution": false,
+   "company_id": 727,
+   "macroregion_id": 4,
+   "premium": true,
+   "verified": false,
+   "is_scam": false,
+   "is_potential_scam": false,
+   "scam_categories": null,
+   "source": "scout",
+   "source_secondary": "global",
+   "linkedin": "https://www.linkedin.com/company/gitlab-com/people/",
+   "is_archived": false,
+   "no_response_reports_count": 0,
+   "og_image_url": "https://api.hirify.me/og-media/1212044.jpg?v=1791280993",
+   "created_at": "2026-10-06T10:03:07.000000Z",
+   "updated_at": "2026-10-06T10:03:12.000000Z",
+   "reopened_at": null,
+   "archived_at": null,
+   "allowed_locations": [
+    "poland"
+   ],
+   "location_reason": "unspecified",
+   "timezone_overlap": null,
+   "office_locations": [],
+   "visa_sponsorship": null,
+   "visa_requirements": [],
+   "global_signals": [],
+   "remote_type_source": "stated",
+   "geo_inference": {
+    "chip_reason": "Location: Remote, Poland"
+   },
+   "field_inference": null,
+   "nice_to_have_tags": [
+    "high throughput distributed systems",
+    "concurrency",
+    "profiling",
+    "schema evolution",
+    "partitioning",
+    "modular monoliths",
+    "event driven systems",
+    "public technical communication",
+    "open source maintenance",
+    "developer focused software as a service"
+   ],
+   "crypto_payment": false,
+   "can_apply_directly": false,
+   "apply_url": null,
+   "location_scope": "restricted",
+   "eligible_countries": [
+    "poland"
+   ],
+   "ineligible_countries": [],
+   "geo_basis": "stated_list",
+   "geo_confidence": "high",
+   "seen": false,
+   "is_favorite": false,
+   "has_applied": false,
+   "application_id": null,
+   "valid_through": "2026-11-05T15:50:54+04:00",
+   "tags": [
+    {
+     "id": 23,
+     "name": "ai"
+    },
+    {
+     "id": 51,
+     "name": "kubernetes"
+    },
+    {
+     "id": 186,
+     "name": "clickhouse"
+    },
+    {
+     "id": 517,
+     "name": "ruby"
+    },
+    {
+     "id": 560,
+     "name": "apis"
+    },
+    {
+     "id": 768,
+     "name": "distributed systems"
+    },
+    {
+     "id": 9516,
+     "name": "performance tuning"
+    },
+    {
+     "id": 18779,
+     "name": "backend architecture"
+    },
+    {
+     "id": 21590,
+     "name": "postgresql"
+    },
+    {
+     "id": 23433,
+     "name": "rate limiting"
+    }
+   ],
+   "salary": {
+    "id": 490112,
+    "vacancy_id": 1212044,
+    "currency": "PLN",
+    "salary_period": "year",
+    "min": 272000,
+    "max": 408000,
+    "salary_in_usd": 7246,
+    "created_at": "2026-10-06T10:03:12.000000Z",
+    "updated_at": "2026-10-06T10:03:12.000000Z"
+   },
+   "specializations": [
+    {
+     "id": 2,
+     "code": "backend_dev",
+     "name": "Бэкенд",
+     "name_en": "Backend"
+    }
+   ],
+   "grades": [
+    {
+     "id": 4,
+     "name": "senior"
+    }
+   ],
+   "regions": [
+    {
+     "id": 16,
+     "code": "poland",
+     "name": "Польша",
+     "name_en": "Poland"
+    }
+   ],
+   "relocation_regions": []
+  },
+  {
+   "id": 1210460,
+   "spec_vocab_version": "v4",
+   "main_stack": [
+    "ruby on rails",
+    "vue",
+    "graphql"
+   ],
+   "slug": "1210460-product-engineer-ruby-rails",
+   "title": "Product Engineer (Ruby on Rails)",
+   "original_title": null,
+   "vacancy_score": 8,
+   "company_title": "OpsLevel",
+   "work_format": [
+    "remote"
+   ],
+   "remote_type": null,
+   "remote_restrictions": [
+    "canada"
+   ],
+   "excluded_locations": [],
+   "work_type": "fulltime",
+   "english_level": "b2",
+   "language_requirements": null,
+   "employee_type": [
+    "employment"
+   ],
+   "company_type": "product_company",
+   "vacancy_language": "en",
+   "tldr": "Product Engineer (Ruby on Rails): Building and shipping customer-focused product features, GraphQL APIs, and an internal software factory that routes work between Linear, coding agents, and human review with an accent on end-to-end ownership, product judgment, and agent-assisted development. Focus on designing performant MySQL data models, improving agent workflows and guardrails, scaling web applications, and maintaining reliability across Rails, Vue, GraphQL, and cloud infrastructure.",
+   "application_instructions": null,
+   "text_mode": null,
+   "user_id": null,
+   "recruiter_meta_id": null,
+   "application_channel": "contacts",
+   "suppress_distribution": false,
+   "company_id": 12475,
+   "macroregion_id": 2,
+   "premium": false,
+   "verified": false,
+   "is_scam": false,
+   "is_potential_scam": false,
+   "scam_categories": null,
+   "source": "scout",
+   "source_secondary": "global",
+   "linkedin": null,
+   "is_archived": false,
+   "no_response_reports_count": 0,
+   "og_image_url": "https://api.hirify.me/og-media/1210460.jpg?v=1791247726",
+   "created_at": "2026-10-06T00:48:39.000000Z",
+   "updated_at": "2026-10-06T00:48:45.000000Z",
+   "reopened_at": null,
+   "archived_at": null,
+   "allowed_locations": [
+    "canada"
+   ],
+   "location_reason": "unspecified",
+   "timezone_overlap": null,
+   "office_locations": [],
+   "visa_sponsorship": null,
+   "visa_requirements": [],
+   "global_signals": [],
+   "remote_type_source": null,
+   "geo_inference": {
+    "chip_reason": "Location: CA; Remote"
+   },
+   "field_inference": null,
+   "nice_to_have_tags": [
+    "agent evaluations",
+    "custom tools",
+    "mcp servers",
+    "internal agent workflows",
+    "sidekiq",
+    "redis",
+    "go",
+    "scaling web applications",
+    "microservices"
+   ],
+   "crypto_payment": false,
+   "can_apply_directly": false,
+   "apply_url": null,
+   "location_scope": "restricted",
+   "eligible_countries": [
+    "canada"
+   ],
+   "ineligible_countries": [],
+   "geo_basis": "stated_list",
+   "geo_confidence": "high",
+   "seen": false,
+   "is_favorite": false,
+   "has_applied": false,
+   "application_id": null,
+   "valid_through": "2026-11-05T15:50:54+04:00",
+   "tags": [
+    {
+     "id": 23,
+     "name": "ai"
+    },
+    {
+     "id": 51,
+     "name": "kubernetes"
+    },
+    {
+     "id": 112,
+     "name": "docker"
+    },
+    {
+     "id": 185,
+     "name": "terraform"
+    },
+    {
+     "id": 190,
+     "name": "mysql"
+    },
+    {
+     "id": 363,
+     "name": "aws"
+    },
+    {
+     "id": 517,
+     "name": "ruby"
+    },
+    {
+     "id": 581,
+     "name": "graphql"
+    },
+    {
+     "id": 1132,
+     "name": "ruby on rails"
+    },
+    {
+     "id": 4695,
+     "name": "vue"
+    }
+   ],
+   "salary": null,
+   "specializations": [
+    {
+     "id": 119,
+     "code": "product_engineer",
+     "name": "Продуктовый инженер",
+     "name_en": "Product Engineer"
+    }
+   ],
+   "grades": [
+    {
+     "id": 4,
+     "name": "senior"
+    }
+   ],
+   "regions": [
+    {
+     "id": 43,
+     "code": "canada",
+     "name": "Канада",
+     "name_en": "Canada"
+    }
+   ],
+   "relocation_regions": []
+  },
+  {
+   "id": 1210327,
+   "spec_vocab_version": "v4",
+   "main_stack": [
+    "ruby on rails",
+    "aws",
+    "kubernetes"
+   ],
+   "slug": "1210327-senior-sre-ruby-rails",
+   "title": "Senior Site Reliability Engineer (Ruby on Rails)",
+   "original_title": "Senior Site Reliability Engineer",
+   "vacancy_score": 8,
+   "company_title": "%hirify_global%",
+   "work_format": [
+    "remote"
+   ],
+   "remote_type": "usa",
+   "remote_restrictions": [
+    "united_states"
+   ],
+   "excluded_locations": [],
+   "work_type": "fulltime",
+   "english_level": "b2",
+   "language_requirements": null,
+   "employee_type": [
+    "employment"
+   ],
+   "company_type": "product_company",
+   "vacancy_language": "en",
+   "tldr": "Senior Site Reliability Engineer (Ruby on Rails): Running and improving the performance, reliability, and scalability of a Ruby on Rails application stack and its infrastructure with an accent on observability, database operations, and AI-assisted engineering workflows. Focus on building AI agents and automations, resolving performance bottlenecks, planning database capacity, and managing disaster recovery and on-call operations.",
+   "application_instructions": null,
+   "text_mode": null,
+   "user_id": null,
+   "recruiter_meta_id": null,
+   "application_channel": "contacts",
+   "suppress_distribution": false,
+   "company_id": 1869,
+   "macroregion_id": 1,
+   "premium": true,
+   "verified": false,
+   "is_scam": false,
+   "is_potential_scam": false,
+   "scam_categories": null,
+   "source": "scout",
+   "source_secondary": "global",
+   "linkedin": "https://www.linkedin.com/company/fleetio/people/",
+   "is_archived": false,
+   "no_response_reports_count": 0,
+   "og_image_url": "https://api.hirify.me/og-media/1210327.jpg?v=1791245319",
+   "created_at": "2026-10-06T00:08:30.000000Z",
+   "updated_at": "2026-10-06T00:08:36.000000Z",
+   "reopened_at": null,
+   "archived_at": null,
+   "allowed_locations": [
+    "united_states"
+   ],
+   "location_reason": "unspecified",
+   "timezone_overlap": null,
+   "office_locations": [],
+   "visa_sponsorship": null,
+   "visa_requirements": [],
+   "global_signals": [],
+   "remote_type_source": "stated",
+   "geo_inference": {
+    "chip_reason": "Location: Remote - USA; the role is explicitly open to candidates in the United States."
+   },
+   "field_inference": null,
+   "nice_to_have_tags": [
+    "ai agents",
+    "llm powered automations",
+    "mcp",
+    "terraform",
+    "kafka",
+    "redis",
+    "elasticsearch",
+    "memcached",
+    "timescaledb",
+    "fleet management industry"
+   ],
+   "crypto_payment": false,
+   "can_apply_directly": false,
+   "apply_url": null,
+   "location_scope": "restricted",
+   "eligible_countries": [
+    "united_states"
+   ],
+   "ineligible_countries": [],
+   "geo_basis": "stated_list",
+   "geo_confidence": "high",
+   "seen": false,
+   "is_favorite": false,
+   "has_applied": false,
+   "application_id": null,
+   "valid_through": "2026-11-05T15:50:54+04:00",
+   "tags": [
+    {
+     "id": 23,
+     "name": "ai"
+    },
+    {
+     "id": 51,
+     "name": "kubernetes"
+    },
+    {
+     "id": 363,
+     "name": "aws"
+    },
+    {
+     "id": 517,
+     "name": "ruby"
+    },
+    {
+     "id": 838,
+     "name": "datadog"
+    },
+    {
+     "id": 1132,
+     "name": "ruby on rails"
+    },
+    {
+     "id": 1416,
+     "name": "infrastructure"
+    },
+    {
+     "id": 1876,
+     "name": "database"
+    },
+    {
+     "id": 4662,
+     "name": "site reliability"
+    }
+   ],
+   "salary": null,
+   "specializations": [
+    {
+     "id": 74,
+     "code": "sre",
+     "name": "SRE-инженер",
+     "name_en": "Site Reliability Engineer"
+    }
+   ],
+   "grades": [
+    {
+     "id": 4,
+     "name": "senior"
+    }
+   ],
+   "regions": [
+    {
+     "id": 6,
+     "code": "united_states",
+     "name": "США",
+     "name_en": "United States"
+    }
+   ],
+   "relocation_regions": []
+  }
+ ],
+ "first_page_url": "https://api.hirify.me/api/vacancies?query=ruby&page=1",
+ "from": 1,
+ "last_page": 10,
+ "last_page_url": "https://api.hirify.me/api/vacancies?query=ruby&page=10",
+ "links": [
+  {
+   "url": null,
+   "label": "&laquo; Previous",
+   "page": null,
+   "active": false
+  },
+  {
+   "url": "https://api.hirify.me/api/vacancies?query=ruby&page=1",
+   "label": "1",
+   "page": 1,
+   "active": true
+  },
+  {
+   "url": "https://api.hirify.me/api/vacancies?query=ruby&page=2",
+   "label": "2",
+   "page": 2,
+   "active": false
+  }
+ ],
+ "next_page_url": "https://api.hirify.me/api/vacancies?query=ruby&page=2",
+ "path": "https://api.hirify.me/api/vacancies",
+ "per_page": 15,
+ "prev_page_url": null,
+ "to": 15,
+ "total": 143
+}

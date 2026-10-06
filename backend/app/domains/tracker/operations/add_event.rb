@@ -14,6 +14,7 @@ module Tracker
         transaction do
           event = step create_event(application, attrs)
           step update_application(application, attrs, event)
+          Events.application_event_added(application, event)
           event
         end
       end

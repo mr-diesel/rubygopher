@@ -22,9 +22,10 @@ gem "stimulus-rails"
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 # gem "bcrypt", "~> 3.1.7"
 
-# --- Background jobs ---
+# --- Background jobs & messaging ---
 gem "sidekiq", "~> 8.1"          # background jobs and workers
 gem "redis", "~> 6.0"            # Rails.cache / rate limits (Sidekiq brings its own redis-client)
+gem "karafka", "~> 2.6"          # Kafka consumers (+ WaterDrop producer): outbox relay, vacancy ingestion
 
 # --- API layer (React portal) ---
 gem "grape", "~> 4.0"            # API framework for the user-facing portal
@@ -79,6 +80,7 @@ group :test do
   gem "rspec-sidekiq", "~> 5.0"    # matchers for testing Sidekiq jobs
   gem "shoulda-matchers", "~> 8.0" # matchers for models (associations, validations)
   gem "webmock", "~> 3.25"         # stubs HTTP to external services (sandboxd, later LLM/job boards)
+  gem "karafka-testing", "~> 2.6"  # drive consumers in specs without a broker
 end
 
 group :development do

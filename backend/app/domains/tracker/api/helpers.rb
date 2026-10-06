@@ -14,6 +14,7 @@ module Tracker
         when :invalid then error!({ errors: payload }, 422)
         when :duplicate then error!({ error: "already tracked", id: payload.id }, 409)
         when :not_found then error!({ error: "not found" }, 404)
+        when :unavailable then error!({ error: payload }, 503)
         end
       end
     end

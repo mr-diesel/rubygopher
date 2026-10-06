@@ -66,10 +66,31 @@ RSpec.describe "API V1 Applications", type: :request do
     end
 
     it "is 422 with field errors on invalid input" do
-      post "/api/v1/applications", params: { company_name: "Acme", vacancy_title: "Dev", apply_url: "nope" }, headers: auth_headers, as: :json
+      post "/api/v1/applications", params: { company_name: "Acme", vacancy_title: "Dev", url: "nope" }, headers: auth_headers, as: :json
 
       expect(response).to have_http_status(:unprocessable_content)
-      expect(response.parsed_body["errors"]).to have_key("apply_url")
+      expect(response.parsed_body["errors"]).to have_key("url")
+    end
+
+    it "records an application from an hh.ru link alone" do
+      stub_request(:get, "https://api.hh.ru/vacancies/555").to_return(
+        status: 200,
+        body: { id: 555, name: "Ruby dev", alternate_url: "https://hh.ru/vacancy/555", employer: { id: 1, name: "Acme" } }.to_json
+      )
+
+      post "/api/v1/applications", params: { url: "https://hh.ru/vacancy/555" }, headers: auth_headers, as: :json
+
+      expect(response).to have_http_status(:created)
+      expect(response.parsed_body["company"]).to include("name" => "Acme")
+      expect(response.parsed_body["vacancy"]).to include("title" => "Ruby dev", "url" => "https://hh.ru/vacancy/555")
+    end
+
+    it "is 503 when hh.ru is down" do
+      stub_request(:get, "https://api.hh.ru/vacancies/556").to_timeout
+
+      post "/api/v1/applications", params: { url: "https://hh.ru/vacancy/556" }, headers: auth_headers, as: :json
+
+      expect(response).to have_http_status(:service_unavailable)
     end
   end
 

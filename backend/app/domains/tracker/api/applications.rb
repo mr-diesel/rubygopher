@@ -11,16 +11,16 @@ module Tracker
           optional :archived, type: Boolean, default: false
         end
         get do
-          scope = current_user.job_applications.includes(:company, :vacancy).order(last_activity_at: :desc, id: :desc)
+          scope = current_user.job_applications.includes(:company, :vacancy, :via_posting).order(last_activity_at: :desc, id: :desc)
           scope = params[:archived] ? scope.archived : scope.active
           scope = scope.where(status: params[:status]) if params[:status]
           present scope.to_a, with: Entities::Application
         end
 
         params do
-          requires :company_name, type: String
-          requires :vacancy_title, type: String
-          optional :apply_url, type: String
+          optional :url, type: String, desc: "vacancy link; hh.ru, career.habr.com and getmatch.ru links resolve the vacancy by themselves"
+          optional :company_name, type: String
+          optional :vacancy_title, type: String
           optional :applied_at, type: DateTime
           optional :language, type: String, values: Vacancy.languages.keys
           optional :work_mode, type: String, values: Vacancy.work_modes.keys
@@ -38,7 +38,7 @@ module Tracker
 
         route_param :id, type: Integer do
           get do
-            application = current_user.job_applications.includes(:company, :vacancy, :events).find_by(id: params[:id])
+            application = current_user.job_applications.includes(:company, :vacancy, :via_posting, :events).find_by(id: params[:id])
             fail!([ :not_found ]) unless application
 
             present application, with: Entities::Application, full: true
