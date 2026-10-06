@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Rebuilds the console sandbox database from scratch: schema from db/structure.sql,
+# synthetic data from db/sandbox_seed.rb. Never copies real data. Runs inside the
+# backend image with DB_* pointing at sandbox_db as the superuser.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+export DISABLE_DATABASE_ENVIRONMENT_CHECK=1
+bin/rails db:drop db:create db:schema:load
+bin/rails runner db/sandbox_seed.rb

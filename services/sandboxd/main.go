@@ -30,10 +30,12 @@ func main() {
 
 	runner := &sandbox.Runner{
 		Ruby:      envOr("SANDBOX_RUBY", "ruby"),
+		Go:        envOr("SANDBOX_GO", "go"),
 		Evaluator: envOr("SANDBOX_EVALUATOR", "/app/app/domains/playground/evaluator.rb"),
 		RailsRoot: envOr("SANDBOX_RAILS_ROOT", "/app"),
 		MaxOutput: 1 << 20,
 	}
+	go warmGoCache(runner, logger)
 
 	server := &http.Server{
 		Addr:              addr,
@@ -60,6 +62,19 @@ func main() {
 	if err := server.Shutdown(shutdownCtx); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		logger.Error("shutdown failed", "err", err)
 	}
+}
+
+// The build cache lives in tmpfs and starts empty: compiling a hello world once
+// makes the first real Go snippet fast instead of a ten-second stdlib build.
+func warmGoCache(runner *sandbox.Runner, logger *slog.Logger) {
+	const hello = "package main\n\nimport (\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"os\"\n\t\"sort\"\n\t\"strings\"\n\t\"sync\"\n\t\"time\"\n)\n\nfunc main() {\n\t_ = []any{json.Marshal, fmt.Println, os.Exit, sort.Ints, strings.Fields, new(sync.WaitGroup), time.Now}\n}\n"
+	started := time.Now()
+	result, err := runner.Run(context.Background(), hello, "go", 10*time.Second)
+	if err != nil || result.Error != nil {
+		logger.Warn("go cache warm-up failed", "err", err, "result", result.Error)
+		return
+	}
+	logger.Info("go cache warmed", "took", time.Since(started).String())
 }
 
 func healthcheck(url string) int {

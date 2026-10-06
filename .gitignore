@@ -6,7 +6,7 @@
 *.swp
 
 # JetBrains IDE
-/.idea/
+.idea/
 
 # Local environment overrides
 .env

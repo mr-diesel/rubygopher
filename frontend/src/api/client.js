@@ -6,6 +6,15 @@ export const getToken = () => localStorage.getItem(TOKEN_KEY);
 export const setToken = (t) => localStorage.setItem(TOKEN_KEY, t);
 export const clearToken = () => localStorage.removeItem(TOKEN_KEY);
 
+// The JWT's `sub` claim is the user id; decoding the payload needs no secret.
+export const currentUserId = () => {
+  try {
+    return Number(JSON.parse(atob(getToken().split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).sub);
+  } catch {
+    return null;
+  }
+};
+
 export async function request(path, { method = "GET", body } = {}) {
   const headers = { "Content-Type": "application/json" };
   const token = getToken();

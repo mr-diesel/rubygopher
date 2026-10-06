@@ -12,7 +12,7 @@ code sandbox written in Go, SQL-first schema management, and a real test suite.
 | Part | Status | Summary |
 |---|---|---|
 | Interview Helper | done | Personal cheat-sheet library: questions grouped by category, rich answers (TipTap documents with syntax-highlighted code blocks), per-user ordering and hiding of shared defaults, admin panel for the default library |
-| Live console | done | Run Ruby snippets from the browser, in plain Ruby or with the Rails app and models loaded. Both run in **sandboxd**, a Go service inside a locked-down container, against a read-only copy of the database |
+| Live console | done | Run snippets from the browser: plain Ruby, Ruby with the Rails app and models loaded, or a Go program (compiled and run, stdlib only). Everything executes in **sandboxd**, a Go service inside a locked-down container, against a throwaway database with synthetic data. **Share** turns the editor into a live session: anyone with the link edits and runs the same snippet over ActionCable (last write wins), with a participant count and everyone's carets; sessions expire a week after the last edit |
 | Application tracker | schema only | Companies, vacancies, applications, cold outreach and their event history. Next step: an API that lets an external AI assistant (ChatGPT, Claude) keep the journal for you via a personal token |
 | Vacancy aggregator | schema only | Ruby/Go postings from hh.ru, getmatch and Habr Career, deduplicated into canonical vacancies with extracted skills. Planned as Go fetchers publishing to Kafka, consumed by Rails |
 | AI interview trainer | planned | Question generation and answer review through an OpenAI-compatible LLM API |
@@ -34,8 +34,9 @@ Decisions worth a look:
 
 - **Operations, not fat controllers.** Multi-step writes are `Dry::Operation` subclasses with a dry-validation contract; Grape endpoints only map results to HTTP. See `backend/app/domains/identity/operations/sign_up.rb`.
 - **Two auth realms that never cross.** Admins use a Devise session for the Slim admin panel; portal users get a JWT from the Grape API with JTI revocation on logout.
-- **Sandboxed code execution.** The `sandbox` compose service has no route out of its internal network, a read-only filesystem, no capabilities, CPU/memory/pid limits and no secrets: the app is mounted read-only with the master key blanked and credentials pointed at nothing. The Rails context talks to `sandbox_db`, a copy of the development database, through a role that Postgres itself restricts to `SELECT` with a statement timeout. The Go supervisor enforces a shared token, a concurrency cap, the timeout (whole process group) and reports OOM kills distinctly; the API adds a per-user token-bucket rate limit (atomic Lua script in Redis) and a snippet size limit. See `services/sandboxd` and `backend/app/domains/playground`.
+- **Sandboxed code execution.** The `sandbox` compose service has no route out of its internal network, a read-only filesystem, no capabilities, CPU/memory/pid limits and no secrets: the app is mounted read-only with the master key blanked and credentials pointed at nothing. The Rails context talks to `sandbox_db`, a throwaway Postgres rebuilt on every start from `db/structure.sql` and seeded with invented data (`db/sandbox_seed.rb`), through a role that Postgres itself restricts to `SELECT` with a statement timeout. No real data ever reaches the sandbox. The Go supervisor enforces a shared token, a concurrency cap, the timeout (whole process group) and reports OOM kills distinctly; the API adds a per-user token-bucket rate limit (atomic Lua script in Redis) and a snippet size limit. See `services/sandboxd` and `backend/app/domains/playground`.
 - **SQL schema dump.** `schema_format = :sql`, so partial indexes and FK rules survive round trips.
+- **Shared sessions over ActionCable.** `?session=<token>` joins a `ConsoleSession`; the channel relays edits and run results to every subscriber, the JWT authenticates the WebSocket, and the same `Identity::Authenticate` serves both Grape and ActionCable.
 - **Tests that do not touch the network.** WebMock stubs sandboxd; the Go supervisor is tested with `sh` instead of Ruby so the tests also run inside the image build.
 
 ## Stack
@@ -60,10 +61,10 @@ curl -X POST localhost:3000/api/v1/signup -H 'Content-Type: application/json' \
      -d '{"email":"me@example.com","password":"password123"}'
 ```
 
-The console's Rails context reads from `sandbox_db`; fill it with a copy of your development data whenever you want it refreshed:
+The console's Rails context reads from `sandbox_db`, which is rebuilt with synthetic data on every `docker compose up`. To rebuild it by hand:
 
 ```bash
-bin/sandbox-db-sync
+bin/sandbox-db-reset
 ```
 
 The console is enabled in development only; set `PLAYGROUND_CONSOLE=true` to enable it elsewhere, and only behind the sandbox.

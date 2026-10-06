@@ -8,7 +8,7 @@ const TAB_KEY = "tab";
 
 const TABS = [
   { id: "helper", label: "Interview Helper", render: () => <Helper /> },
-  { id: "console", label: "Rails console", render: () => <Console /> }
+  { id: "console", label: "Live console", render: () => <Console /> }
 ];
 
 export default function App() {

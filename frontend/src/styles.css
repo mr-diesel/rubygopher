@@ -316,7 +316,7 @@ body {
 
 .rich-content .ProseMirror { padding: 0; min-height: 0; background: transparent; }
 
-/* Rails console: editor on the left, evaluation result on the right */
+/* Live console: editor on the left, evaluation result on the right */
 .console {
   display: flex;
   flex-direction: column;
@@ -357,6 +357,52 @@ body {
   font: inherit;
   font-size: 0.8rem;
 }
+
+.console-share {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.console-share .live {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.console-share .live.on { color: var(--ok); }
+
+/* Other participants' carets in a shared session */
+.remote-cursor {
+  position: relative;
+  display: inline-block;
+  width: 0;
+  border-left: 2px solid var(--cursor);
+  height: 1.2em;
+  vertical-align: text-bottom;
+}
+
+.remote-cursor::after {
+  content: attr(data-name);
+  position: absolute;
+  top: -1.1em;
+  left: -2px;
+  padding: 0 0.3em;
+  font-size: 0.7rem;
+  line-height: 1.2em;
+  color: var(--code-bg);
+  background: var(--cursor);
+  border-radius: 3px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.remote-cursor-0 { --cursor: #cc7832; }
+.remote-cursor-1 { --cursor: #6a8759; }
+.remote-cursor-2 { --cursor: #6897bb; }
+.remote-cursor-3 { --cursor: #9876aa; }
+.remote-cursor-4 { --cursor: #ffc66d; }
+.remote-cursor-5 { --cursor: #c75450; }
 
 .console-timing {
   margin-top: 0.5rem;

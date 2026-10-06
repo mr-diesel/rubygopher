@@ -7,6 +7,7 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -27,6 +28,7 @@ type Error struct {
 
 type Runner struct {
 	Ruby      string
+	Go        string
 	Evaluator string
 	RailsRoot string
 	MaxOutput int64
@@ -36,9 +38,11 @@ const boot = "print JSON.generate(Playground::Evaluator.run(File.read(ARGV[0]), 
 
 // The evaluator enforces the snippet timeout itself; the process deadline only adds
 // room for interpreter boot and acts as the backstop when the snippet swallows it.
+// Go has no in-process timeout: build gets its own allowance, the binary gets the timeout.
 var bootAllowance = map[string]time.Duration{
 	"ruby":  3 * time.Second,
 	"rails": 20 * time.Second,
+	"go":    30 * time.Second,
 }
 
 var railsEnv = []string{
@@ -47,6 +51,11 @@ var railsEnv = []string{
 	"BUNDLE_PATH", "BUNDLE_APP_CONFIG", "GEM_HOME", "GEM_PATH",
 }
 
+var baseEnv = []string{"PATH=/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin", "LANG=C.UTF-8", "HOME=/tmp"}
+
+// Offline, cgo-free, no toolchain downloads; caches live in tmpfs.
+var goEnv = []string{"GOCACHE=/tmp/gocache", "GOPATH=/tmp/gopath", "GOTOOLCHAIN=local", "GOPROXY=off", "GOFLAGS=-mod=mod", "CGO_ENABLED=0"}
+
 const stderrTail = 2000
 
 var (
@@ -54,7 +63,7 @@ var (
 	errKilled  = errors.New("sandbox: killed")
 )
 
-func Contexts() []string { return []string{"ruby", "rails"} }
+func Contexts() []string { return []string{"ruby", "rails", "go"} }
 
 func (r *Runner) Run(ctx context.Context, code, context string, timeout time.Duration) (Result, error) {
 	allowance, ok := bootAllowance[context]
@@ -62,29 +71,69 @@ func (r *Runner) Run(ctx context.Context, code, context string, timeout time.Dur
 		return Result{}, errors.New("sandbox: unknown context " + context)
 	}
 
-	file, err := os.CreateTemp("", "snippet-*.rb")
+	dir, err := os.MkdirTemp("", "snippet-*")
 	if err != nil {
 		return Result{}, err
 	}
-	defer os.Remove(file.Name())
+	defer os.RemoveAll(dir)
 
-	if _, err := file.WriteString(code); err != nil {
-		return Result{}, err
-	}
-	if err := file.Close(); err != nil {
-		return Result{}, err
+	if context == "go" {
+		return r.runGo(ctx, dir, code, timeout, allowance)
 	}
 
-	stdout, stderr, err := execute(ctx, timeout+allowance, r.MaxOutput, r.command(context, file.Name(), timeout))
+	file := filepath.Join(dir, "snippet.rb")
+	if err := os.WriteFile(file, []byte(code), 0o600); err != nil {
+		return Result{}, err
+	}
+
+	out, err := execute(ctx, timeout+allowance, r.MaxOutput, r.command(context, file, timeout))
 	switch {
 	case errors.Is(err, errTimeout):
-		return timedOut(timeout), nil
+		return timedOut(timeout, nil), nil
 	case errors.Is(err, errKilled):
 		return killed(), nil
 	case err != nil:
 		return Result{}, err
 	}
-	return parse(stdout, stderr), nil
+	return parse(out.stdout, out.stderr), nil
+}
+
+// Build and run are separate steps so a compile error and a crashing program are
+// reported differently, and only the program itself is charged the user's timeout.
+func (r *Runner) runGo(ctx context.Context, dir, code string, timeout, allowance time.Duration) (Result, error) {
+	source := filepath.Join(dir, "main.go")
+	binary := filepath.Join(dir, "prog")
+	if err := os.WriteFile(source, []byte(code), 0o600); err != nil {
+		return Result{}, err
+	}
+
+	build, err := execute(ctx, allowance, r.MaxOutput, spec{
+		dir:  dir,
+		env:  append(append([]string{}, baseEnv...), goEnv...),
+		argv: []string{r.Go, "build", "-o", binary, source},
+	})
+	switch {
+	case errors.Is(err, errTimeout):
+		return Result{Error: &Error{Class: "BuildError", Message: "compilation exceeded " + allowance.String()}}, nil
+	case err != nil:
+		return Result{}, err
+	case build.exit != 0:
+		return Result{Error: &Error{Class: "BuildError", Message: strings.TrimSpace(string(build.stderr))}}, nil
+	}
+
+	run, err := execute(ctx, timeout, r.MaxOutput, spec{dir: dir, env: baseEnv, argv: []string{binary}})
+	output := string(run.stdout) + string(run.stderr)
+	switch {
+	case errors.Is(err, errTimeout):
+		return timedOut(timeout, &output), nil
+	case errors.Is(err, errKilled):
+		return killed(), nil
+	case err != nil:
+		return Result{}, err
+	case run.exit != 0:
+		return Result{Output: output, Error: &Error{Class: "ExitError", Message: "exit status " + strconv.Itoa(run.exit)}}, nil
+	}
+	return Result{Output: output}, nil
 }
 
 type spec struct {
@@ -93,18 +142,22 @@ type spec struct {
 	argv []string
 }
 
+type outcome struct {
+	stdout, stderr []byte
+	exit           int
+}
+
 func (r *Runner) command(context, file string, timeout time.Duration) spec {
 	seconds := strconv.Itoa(int(timeout / time.Second))
-	env := []string{"PATH=/usr/local/bin:/usr/bin:/bin", "LANG=C.UTF-8", "HOME=/tmp"}
 
 	if context == "rails" {
 		return spec{
 			dir:  r.RailsRoot,
-			env:  append(env, passthrough(railsEnv)...),
+			env:  append(append([]string{}, baseEnv...), passthrough(railsEnv)...),
 			argv: []string{"bin/rails", "runner", boot, file, seconds},
 		}
 	}
-	return spec{env: env, argv: []string{r.Ruby, "-r", r.Evaluator, "-e", boot, file, seconds}}
+	return spec{env: baseEnv, argv: []string{r.Ruby, "-r", r.Evaluator, "-e", boot, file, seconds}}
 }
 
 func passthrough(keys []string) []string {
@@ -117,19 +170,19 @@ func passthrough(keys []string) []string {
 	return env
 }
 
-// A non-zero exit is not an error here: the evaluator already turned the snippet's
-// failure into JSON. Only infrastructure problems come back as err.
-func execute(ctx context.Context, deadline time.Duration, maxOutput int64, s spec) ([]byte, []byte, error) {
+// A non-zero exit is not an error here, it is reported through outcome.exit.
+// Only infrastructure problems come back as err.
+func execute(ctx context.Context, deadline time.Duration, maxOutput int64, s spec) (outcome, error) {
 	ctx, cancel := context.WithTimeout(ctx, deadline)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, s.argv[0], s.argv[1:]...)
 	cmd.Dir = s.dir
 	cmd.Env = s.env
-	// Own process group: the kill reaches whatever the snippet forked, not just ruby.
+	// Own process group: the kill reaches whatever the snippet forked, not just the child.
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Cancel = func() error { return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL) }
-	// Forked children keep the pipes open after ruby exits; do not wait for them.
+	// Forked children keep the pipes open after the child exits; do not wait for them.
 	cmd.WaitDelay = 500 * time.Millisecond
 
 	stdout := &cappedBuffer{limit: maxOutput}
@@ -141,23 +194,25 @@ func execute(ctx context.Context, deadline time.Duration, maxOutput int64, s spe
 	if cmd.Process != nil {
 		_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
 	}
+	out := outcome{stdout: stdout.Bytes(), stderr: stderr.Bytes()}
 
 	switch {
 	case errors.Is(ctx.Err(), context.DeadlineExceeded):
-		return stdout.Bytes(), stderr.Bytes(), errTimeout
+		return out, errTimeout
 	case runErr == nil, errors.Is(runErr, exec.ErrWaitDelay):
-		return stdout.Bytes(), stderr.Bytes(), nil
+		return out, nil
 	}
 
 	var exitErr *exec.ExitError
 	if !errors.As(runErr, &exitErr) {
-		return stdout.Bytes(), stderr.Bytes(), runErr
+		return out, runErr
 	}
 	// A SIGKILL we did not send is the cgroup OOM killer.
 	if status, ok := exitErr.Sys().(syscall.WaitStatus); ok && status.Signaled() && status.Signal() == syscall.SIGKILL {
-		return stdout.Bytes(), stderr.Bytes(), errKilled
+		return out, errKilled
 	}
-	return stdout.Bytes(), stderr.Bytes(), nil
+	out.exit = exitErr.ExitCode()
+	return out, nil
 }
 
 func parse(stdout, stderr []byte) Result {
@@ -172,11 +227,15 @@ func parse(stdout, stderr []byte) Result {
 	return result
 }
 
-func timedOut(timeout time.Duration) Result {
-	return Result{Error: &Error{
+func timedOut(timeout time.Duration, output *string) Result {
+	result := Result{Error: &Error{
 		Class:   "Timeout",
 		Message: "execution exceeded " + timeout.String() + " — the process was killed",
 	}}
+	if output != nil {
+		result.Output = *output
+	}
+	return result
 }
 
 func killed() Result {

@@ -12,10 +12,17 @@ ARG RUBY_VERSION=4.0.7
 FROM ruby:${RUBY_VERSION}-slim
 
 # libpq-dev — builds the pg gem; build-essential/git/pkg-config — native gem builds;
-# libvips — image_processing; postgresql-client — psql/pg_isready inside the container.
+# libvips — image_processing; postgresql-client-18 from PGDG — pg_dump must match the
+# Postgres 18 server to write db/structure.sql (Debian ships 17).
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y \
-      build-essential git libpq-dev libyaml-dev pkg-config libvips postgresql-client curl && \
+      build-essential git libpq-dev libyaml-dev pkg-config libvips curl ca-certificates && \
+    install -d /usr/share/postgresql-common/pgdg && \
+    curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc && \
+    echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt trixie-pgdg main" \
+      > /etc/apt/sources.list.d/pgdg.list && \
+    apt-get update -qq && \
+    apt-get install --no-install-recommends -y postgresql-client-18 && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives
 
 # Run as a non-root user whose UID/GID match the host user (default 1000), so files

@@ -159,6 +159,23 @@ RSpec.describe "API V1 Console", type: :request do
 
           expect(a_request(:post, "http://sandbox:8080/eval").with(body: hash_including("context" => "rails"))).to have_been_made
         end
+
+        it "delegates the go context to the sandbox" do
+          body = run("package main", context: "go")
+
+          expect(body["context"]).to eq("go")
+          expect(a_request(:post, "http://sandbox:8080/eval").with(body: hash_including("context" => "go"))).to have_been_made
+        end
+      end
+    end
+
+    context "in the go context without the sandbox" do
+      it "explains that the context needs the sandbox" do
+        body = run("package main", context: "go")
+
+        expect(response).to have_http_status(:created)
+        expect(body.dig("error", "class")).to eq("ConsoleError")
+        expect(body.dig("error", "message")).to include("sandbox")
       end
     end
   end

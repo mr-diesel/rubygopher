@@ -5,7 +5,7 @@ module Playground
   # Executing user-supplied Ruby is inherently dangerous, so it is limited to
   # local environments unless PLAYGROUND_CONSOLE=true is set deliberately.
   class Runner
-    CONTEXTS = %w[rails ruby].freeze
+    CONTEXTS = %w[rails ruby go].freeze
     DEFAULT_TIMEOUT = 5
     MAX_CODE_LENGTH = 64 * 1024
 
@@ -35,7 +35,7 @@ module Playground
     def self.runner_for(context)
       return Runners::Sandbox if Runners::Sandbox.configured?
 
-      LOCAL_RUNNERS.fetch(context)
+      LOCAL_RUNNERS.fetch(context) { Runners::SandboxOnly }
     end
   end
 end

@@ -17,8 +17,11 @@ RUN apt-get update -qq && \
     gem install bundler && \
     useradd --uid 10001 --create-home --shell /usr/sbin/nologin sandbox
 COPY --from=build /out/sandboxd /usr/local/bin/sandboxd
+# The Go toolchain is statically linked, so the alpine build stage's copy runs on Debian.
+COPY --from=build /usr/local/go /usr/local/go
 USER sandbox
 ENV SANDBOX_ADDR=:8080 \
-    BUNDLE_PATH=/usr/local/bundle
+    BUNDLE_PATH=/usr/local/bundle \
+    PATH=/usr/local/go/bin:$PATH
 EXPOSE 8080
 ENTRYPOINT ["sandboxd"]

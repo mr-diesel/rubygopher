@@ -60,7 +60,7 @@ services:
       - bundle_cache:/usr/local/bundle:ro
       - /dev/null:/app/config/master.key:ro   # the app code is mounted, the secrets are not
     tmpfs:
-      - /tmp:size=256m,mode=1777
+      - /tmp:size=256m,mode=1777,exec        # compiled Go snippets run from here; the other tmpfs stay noexec
       - /app/tmp:size=256m,mode=1777
       - /app/log:size=64m,mode=1777
     cap_drop:
@@ -80,8 +80,8 @@ services:
       DB_USERNAME: console
       DB_PASSWORD: ${SANDBOX_CONSOLE_PASSWORD:-console}
     depends_on:
-      sandbox_db:
-        condition: service_healthy
+      sandbox_seed:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "sandboxd", "-check"]
       interval: 10s
@@ -90,24 +90,39 @@ services:
     networks:
       - sandbox
 
-  # Read-only copy of the development database for the console's Rails context.
-  # Fill it with bin/sandbox-db-sync from the host.
+  # Database for the console's Rails context. Rebuilt from the schema with synthetic
+  # data on every start (sandbox_seed), so no real data ever reaches the sandbox.
   sandbox_db:
     image: postgres:18-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${SANDBOX_DB_PASSWORD:-sandbox}
       POSTGRES_DB: rubygopher_development
-      SANDBOX_CONSOLE_PASSWORD: ${SANDBOX_CONSOLE_PASSWORD:-console}
-    volumes:
-      - ./services/sandboxd/db-init:/docker-entrypoint-initdb.d:ro
-      - sandbox_pg_data:/var/lib/postgresql
+    tmpfs:
+      - /var/lib/postgresql:size=512m       # throwaway by design: nothing here survives a restart
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
     networks:
+      - sandbox
+
+  # One-shot: loads db/structure.sql into sandbox_db and seeds it with invented data.
+  sandbox_seed:
+    <<: *backend
+    command: bash -c "bundle check || bundle install; bin/sandbox-db-reset"
+    environment:
+      <<: *backend_env
+      DB_HOST: sandbox_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${SANDBOX_DB_PASSWORD:-sandbox}
+      SANDBOX_CONSOLE_PASSWORD: ${SANDBOX_CONSOLE_PASSWORD:-console}
+    depends_on:
+      sandbox_db:
+        condition: service_healthy
+    networks:
+      - rubygopher
       - sandbox
 
   frontend:
@@ -152,7 +167,6 @@ services:
 volumes:
   bundle_cache:
   postgres18_data:
-  sandbox_pg_data:
   redis_data:
   frontend_node_modules:
 

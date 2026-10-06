@@ -170,6 +170,75 @@ ALTER SEQUENCE public.company_outreaches_id_seq OWNED BY public.company_outreach
 
 
 --
+-- Name: console_sessions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.console_sessions (
+    id bigint NOT NULL,
+    token character varying NOT NULL,
+    code text DEFAULT ''::text NOT NULL,
+    context character varying DEFAULT 'rails'::character varying NOT NULL,
+    result jsonb,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: TABLE console_sessions; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.console_sessions IS 'Shared live-console sessions: anyone with the token edits the same snippet';
+
+
+--
+-- Name: COLUMN console_sessions.token; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.console_sessions.token IS 'URL-safe identifier shared as ?session=<token>';
+
+
+--
+-- Name: COLUMN console_sessions.code; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.console_sessions.code IS 'Current snippet; last write wins';
+
+
+--
+-- Name: COLUMN console_sessions.context; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.console_sessions.context IS 'rails | ruby | go';
+
+
+--
+-- Name: COLUMN console_sessions.result; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.console_sessions.result IS 'Last evaluation result as returned by the console API, plus who ran it';
+
+
+--
+-- Name: console_sessions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.console_sessions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: console_sessions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.console_sessions_id_seq OWNED BY public.console_sessions.id;
+
+
+--
 -- Name: hidden_interview_questions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -639,6 +708,13 @@ ALTER TABLE ONLY public.company_outreaches ALTER COLUMN id SET DEFAULT nextval('
 
 
 --
+-- Name: console_sessions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.console_sessions ALTER COLUMN id SET DEFAULT nextval('public.console_sessions_id_seq'::regclass);
+
+
+--
 -- Name: hidden_interview_questions id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -760,6 +836,14 @@ ALTER TABLE ONLY public.company_outreach_events
 
 ALTER TABLE ONLY public.company_outreaches
     ADD CONSTRAINT company_outreaches_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: console_sessions console_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.console_sessions
+    ADD CONSTRAINT console_sessions_pkey PRIMARY KEY (id);
 
 
 --
@@ -934,6 +1018,13 @@ CREATE INDEX index_company_outreaches_on_company_id ON public.company_outreaches
 --
 
 CREATE UNIQUE INDEX index_company_outreaches_on_user_id_and_company_id ON public.company_outreaches USING btree (user_id, company_id);
+
+
+--
+-- Name: index_console_sessions_on_token; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_console_sessions_on_token ON public.console_sessions USING btree (token);
 
 
 --
@@ -1271,6 +1362,7 @@ ALTER TABLE ONLY public.user_skills
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261006105137'),
 ('20260810091334'),
 ('20260731102548'),
 ('20260731095335'),

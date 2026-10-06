@@ -17,7 +17,7 @@ func sh(script string) spec {
 
 func TestExecuteKillsOnTimeout(t *testing.T) {
 	started := time.Now()
-	_, _, err := execute(context.Background(), 200*time.Millisecond, 1024, sh("sleep 5"))
+	_, err := execute(context.Background(), 200*time.Millisecond, 1024, sh("sleep 5"))
 
 	if !errors.Is(err, errTimeout) {
 		t.Fatalf("err = %v, want errTimeout", err)
@@ -29,7 +29,7 @@ func TestExecuteKillsOnTimeout(t *testing.T) {
 
 func TestExecuteKillsChildrenOfTheSnippet(t *testing.T) {
 	started := time.Now()
-	_, _, err := execute(context.Background(), 200*time.Millisecond, 1024, sh("sh -c 'sleep 5' & wait"))
+	_, err := execute(context.Background(), 200*time.Millisecond, 1024, sh("sh -c 'sleep 5' & wait"))
 
 	if !errors.Is(err, errTimeout) {
 		t.Fatalf("err = %v, want errTimeout", err)
@@ -41,13 +41,13 @@ func TestExecuteKillsChildrenOfTheSnippet(t *testing.T) {
 
 func TestExecuteDoesNotWaitForOrphans(t *testing.T) {
 	started := time.Now()
-	stdout, _, err := execute(context.Background(), 5*time.Second, 1024, sh("sleep 3 & echo hi"))
+	out, err := execute(context.Background(), 5*time.Second, 1024, sh("sleep 3 & echo hi"))
 
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(stdout) != "hi\n" {
-		t.Errorf("stdout = %q", stdout)
+	if string(out.stdout) != "hi\n" {
+		t.Errorf("stdout = %q", out.stdout)
 	}
 	if elapsed := time.Since(started); elapsed > 2*time.Second {
 		t.Errorf("took %s, waited for the orphaned child", elapsed)
@@ -55,7 +55,7 @@ func TestExecuteDoesNotWaitForOrphans(t *testing.T) {
 }
 
 func TestExecuteReportsExternalKill(t *testing.T) {
-	_, _, err := execute(context.Background(), 5*time.Second, 1024, sh("kill -9 $$"))
+	_, err := execute(context.Background(), 5*time.Second, 1024, sh("kill -9 $$"))
 
 	if !errors.Is(err, errKilled) {
 		t.Fatalf("err = %v, want errKilled", err)
@@ -63,29 +63,29 @@ func TestExecuteReportsExternalKill(t *testing.T) {
 }
 
 func TestExecuteCapsOutput(t *testing.T) {
-	stdout, _, err := execute(context.Background(), 5*time.Second, 1000, sh("yes | head -c 100000"))
+	out, err := execute(context.Background(), 5*time.Second, 1000, sh("yes | head -c 100000"))
 
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(stdout) != 1000 {
-		t.Errorf("kept %d bytes, want 1000", len(stdout))
+	if len(out.stdout) != 1000 {
+		t.Errorf("kept %d bytes, want 1000", len(out.stdout))
 	}
 }
 
 func TestExecuteTreatsNonZeroExitAsResult(t *testing.T) {
-	_, stderr, err := execute(context.Background(), 5*time.Second, 1024, sh("echo boom >&2; exit 3"))
+	out, err := execute(context.Background(), 5*time.Second, 1024, sh("echo boom >&2; exit 3"))
 
 	if err != nil {
 		t.Fatalf("err = %v, want nil", err)
 	}
-	if string(stderr) != "boom\n" {
-		t.Errorf("stderr = %q", stderr)
+	if string(out.stderr) != "boom\n" || out.exit != 3 {
+		t.Errorf("stderr = %q, exit = %d", out.stderr, out.exit)
 	}
 }
 
 func TestExecuteAppliesDirAndEnv(t *testing.T) {
-	stdout, _, err := execute(context.Background(), 5*time.Second, 1024, spec{
+	out, err := execute(context.Background(), 5*time.Second, 1024, spec{
 		dir:  "/",
 		env:  []string{"PATH=/usr/bin:/bin", "GREETING=hi"},
 		argv: []string{"sh", "-c", "pwd; echo $GREETING"},
@@ -94,8 +94,8 @@ func TestExecuteAppliesDirAndEnv(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(stdout) != "/\nhi\n" {
-		t.Errorf("stdout = %q", stdout)
+	if string(out.stdout) != "/\nhi\n" {
+		t.Errorf("stdout = %q", out.stdout)
 	}
 }
 
@@ -107,7 +107,7 @@ func TestCommandForRuby(t *testing.T) {
 	if !slices.Equal(s.argv, want) {
 		t.Errorf("argv = %q", s.argv)
 	}
-	if s.dir != "" || len(s.env) != 3 {
+	if s.dir != "" || len(s.env) != len(baseEnv) {
 		t.Errorf("ruby context must run with no dir and a minimal env, got dir=%q env=%q", s.dir, s.env)
 	}
 }
@@ -153,6 +153,39 @@ func TestParseReadsEvaluatorVerdict(t *testing.T) {
 
 	if result.Output != "2\n" || result.Error == nil || result.Error.Class != "ArgumentError" {
 		t.Errorf("unexpected result: %+v", result)
+	}
+}
+
+func TestRunGoReportsBuildRunAndTimeout(t *testing.T) {
+	goBin, err := exec.LookPath("go")
+	if err != nil {
+		t.Skip("go is not installed")
+	}
+	runner := &Runner{Go: goBin, MaxOutput: 1 << 20}
+
+	cases := []struct {
+		name, code, class, output string
+		timeout                   time.Duration
+	}{
+		{"prints", "package main\nimport \"fmt\"\nfunc main() { fmt.Println(\"hi\") }", "", "hi\n", 10 * time.Second},
+		{"build error", "package main\nfunc main() { undefined() }", "BuildError", "", 10 * time.Second},
+		{"panic", "package main\nfunc main() { panic(\"boom\") }", "ExitError", "panic: boom", 10 * time.Second},
+		{"timeout keeps output", "package main\nimport (\"fmt\"; \"time\")\nfunc main() { fmt.Println(\"partial\"); time.Sleep(time.Minute) }", "Timeout", "partial\n", time.Second},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := runner.Run(context.Background(), tc.code, "go", tc.timeout)
+			if err != nil {
+				t.Fatal(err)
+			}
+			class := ""
+			if result.Error != nil {
+				class = result.Error.Class
+			}
+			if class != tc.class || !strings.Contains(result.Output, tc.output) {
+				t.Errorf("got class=%q output=%q, want class=%q output containing %q", class, result.Output, tc.class, tc.output)
+			}
+		})
 	}
 }
 
