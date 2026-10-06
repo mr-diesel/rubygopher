@@ -497,3 +497,81 @@ body {
 }
 
 .digest-row small { display: block; color: var(--text-dim); }
+
+/* Tracker: list of applications / outreach on the left, detail or form on the right */
+.tracker-col { width: 300px; }
+
+.tracker-filter {
+  padding: 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--code-bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.tracker-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.1rem 0.5rem;
+  text-align: left;
+  padding: 0.45rem 0.6rem;
+  border: 0;
+  background: var(--btn);
+  color: var(--text);
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.tracker-row:hover { background: var(--btn-hover); }
+.tracker-row.active { background: var(--code-bg); color: #fff; }
+.tracker-row__title { font-weight: 600; }
+.tracker-row__sub { grid-column: 1; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tracker-row__due { grid-column: 2; grid-row: 2; justify-self: end; }
+
+.status {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  background: var(--btn);
+  color: var(--text);
+  white-space: nowrap;
+  align-self: center;
+}
+
+.status-applied, .status-no_response { background: #4e5254; }
+.status-viewed, .status-talent_pool { background: #45606b; }
+.status-screening, .status-interview, .status-tech_interview { background: #6897bb; color: #fff; }
+.status-offer { background: var(--ok); color: #fff; }
+.status-rejected { background: var(--danger); color: #fff; }
+
+.tracker-detail h2 { margin: 0; }
+.tracker-detail h4 { margin: 1.25rem 0 0.5rem; color: var(--text-dim); text-transform: uppercase; font-size: 0.8rem; }
+.tracker-detail__vacancy { margin: 0.4rem 0; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.tracker-detail__vacancy a { color: var(--accent); }
+.tracker-detail__notes { white-space: pre-wrap; }
+.tracker-detail .dim, .tracker .dim { color: var(--text-dim); }
+
+.timeline { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.timeline li { display: grid; grid-template-columns: 10rem 1fr; gap: 0.1rem 0.75rem; padding: 0.4rem 0; border-bottom: 1px solid var(--border); }
+.timeline__when { color: var(--text-dim); font-size: 0.85rem; }
+.timeline__what { display: flex; align-items: center; gap: 0.5rem; }
+.timeline__comment { grid-column: 2; white-space: pre-wrap; }
+
+.tracker-event-form { max-width: 40rem; }
+.tracker-event-form select,
+.q-form select {
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--code-bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.form-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.form-row .field-label { display: flex; flex-direction: column; gap: 0.2rem; }
+.form-error { color: var(--danger); margin: 0; }

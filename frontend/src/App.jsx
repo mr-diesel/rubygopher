@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "./hooks/useAuth";
 import Login from "./pages/Login";
+import Tracker from "./pages/Tracker";
 import Helper from "./pages/Helper";
 import Console from "./pages/Console";
 import DigestBadge from "./components/DigestBadge";
@@ -9,6 +10,7 @@ import { useDigest } from "./hooks/useDigest";
 const TAB_KEY = "tab";
 
 const TABS = [
+  { id: "tracker", label: "Tracker", render: () => <Tracker /> },
   { id: "helper", label: "Interview Helper", render: () => <Helper /> },
   { id: "console", label: "Live console", render: () => <Console /> }
 ];
