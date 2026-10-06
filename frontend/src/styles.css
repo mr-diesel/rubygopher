@@ -496,7 +496,8 @@ body {
   padding: 0.3rem 0;
 }
 
-.digest-row small { display: block; color: var(--text-dim); }
+.digest-row small { display: block; color: var(--text-dim); overflow-wrap: anywhere; }
+.digest-row a { color: var(--accent); }
 
 /* Tracker: list of applications / outreach on the left, detail or form on the right */
 .tracker-col { width: 300px; }

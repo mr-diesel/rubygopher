@@ -614,7 +614,9 @@ CREATE TABLE public.users (
     name character varying,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    vacancies_seen_at timestamp(6) without time zone
+    vacancies_seen_at timestamp(6) without time zone,
+    telegram_chat_id bigint,
+    telegram_link_code character varying
 );
 
 
@@ -623,6 +625,20 @@ CREATE TABLE public.users (
 --
 
 COMMENT ON COLUMN public.users.vacancies_seen_at IS 'When the user last opened the vacancy feed; vacancies created after this count as new';
+
+
+--
+-- Name: COLUMN users.telegram_chat_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.users.telegram_chat_id IS 'Telegram chat the notifier delivers to; NULL until the user links the bot';
+
+
+--
+-- Name: COLUMN users.telegram_link_code; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.users.telegram_link_code IS 'One-time code sent to the bot as /start <code>; cleared once linked';
 
 
 --
@@ -1246,6 +1262,13 @@ CREATE UNIQUE INDEX index_users_on_reset_password_token ON public.users USING bt
 
 
 --
+-- Name: index_users_on_telegram_link_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_users_on_telegram_link_code ON public.users USING btree (telegram_link_code) WHERE (telegram_link_code IS NOT NULL);
+
+
+--
 -- Name: index_vacancies_on_company_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1461,6 +1484,7 @@ ALTER TABLE ONLY public.user_skills
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261006134735'),
 ('20261006113413'),
 ('20261006112738'),
 ('20261006105137'),

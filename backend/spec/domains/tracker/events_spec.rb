@@ -11,6 +11,14 @@ RSpec.describe Tracker::Events do
     expect(event.payload).to include("application_id" => result.value!.id, "company" => "Acme", "status" => "applied", "user_id" => user.id)
   end
 
+  it "carries the user's telegram chat so the notifier needs no lookup" do
+    user.update!(telegram_chat_id: 99)
+
+    Tracker::Operations::RecordApplication.new.call(user, company_name: "Acme", vacancy_title: "Dev")
+
+    expect(Outbox::Event.sole.payload).to include("telegram_chat_id" => 99)
+  end
+
   it "records nothing when the operation fails" do
     Tracker::Operations::RecordApplication.new.call(user, company_name: "", vacancy_title: "Dev")
 

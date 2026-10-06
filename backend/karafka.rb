@@ -22,5 +22,11 @@ class KarafkaApp < Karafka::App
       config(partitions: 3, replication_factor: 1)
       active false
     end
+
+    # The notifier forwards "/start <code>" from Telegram; we tie the chat to the user.
+    topic "telegram.links" do
+      config(partitions: 1, replication_factor: 1)
+      consumer Notifications::Consumers::TelegramLinksConsumer
+    end
   end
 end

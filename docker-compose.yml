@@ -16,6 +16,7 @@ x-backend: &backend
     - bundle_cache:/usr/local/bundle # gems survive container rebuilds
   environment: &backend_env
     RAILS_ENV: development
+    TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-}
     DB_HOST: db
     DB_USERNAME: postgres
     DB_PASSWORD: postgres
@@ -184,6 +185,22 @@ services:
       FETCH_QUERIES: ruby,go
       HH_TOKEN: ${HH_TOKEN:-}
       HIRIFY_REMOTE_TYPES: ${HIRIFY_REMOTE_TYPES:-russia}   # hirify lists mostly foreign remote jobs; keep the ones open to Russia
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - rubygopher
+
+  # Delivers tracker events to Telegram and relays /start codes back to Rails.
+  # Without TELEGRAM_BOT_TOKEN it only logs what it would send.
+  notifier:
+    build:
+      context: .
+      dockerfile: services/notifier/Dockerfile
+    image: rubygopher_notifier:dev
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
     depends_on:
       kafka:
         condition: service_healthy
