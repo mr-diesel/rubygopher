@@ -3,6 +3,8 @@ import { useAuth } from "./hooks/useAuth";
 import Login from "./pages/Login";
 import Helper from "./pages/Helper";
 import Console from "./pages/Console";
+import DigestBadge from "./components/DigestBadge";
+import { useDigest } from "./hooks/useDigest";
 
 const TAB_KEY = "tab";
 
@@ -16,6 +18,13 @@ export default function App() {
   const [tab, setTab] = useState(() => localStorage.getItem(TAB_KEY) || TABS[0].id);
 
   if (!auth.authed) return <Login auth={auth} />;
+
+  return <Shell auth={auth} tab={tab} setTab={setTab} />;
+}
+
+// Split from App so the digest polling only starts once the user is signed in.
+function Shell({ auth, tab, setTab }) {
+  const { digest, refresh } = useDigest();
 
   const select = (id) => {
     setTab(id);
@@ -36,6 +45,8 @@ export default function App() {
             </button>
           ))}
         </nav>
+
+        <DigestBadge digest={digest} onChange={refresh} />
 
         <button className="logout" onClick={auth.logout}>
           Logout

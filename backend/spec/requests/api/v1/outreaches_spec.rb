@@ -37,6 +37,13 @@ RSpec.describe "API V1 Outreaches", type: :request do
       expect(response.parsed_body["events"].sole).to include("status" => "no_response")
     end
 
+    it "accepts an ISO 8601 sent_at" do
+      post "/api/v1/outreaches", params: { company_name: "Acme", sent_at: "2026-09-30T08:00:00Z" }, headers: auth_headers, as: :json
+
+      expect(response).to have_http_status(:created)
+      expect(CompanyOutreach.sole.sent_at).to eq(Time.utc(2026, 9, 30, 8))
+    end
+
     it "is 409 for a second outreach to the same company" do
       create(:company_outreach, user: user, company: create(:company, name: "Acme"))
 

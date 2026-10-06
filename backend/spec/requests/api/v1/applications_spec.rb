@@ -48,6 +48,15 @@ RSpec.describe "API V1 Applications", type: :request do
       expect(response.parsed_body["events"].sole).to include("event_type" => "status_changed", "comment" => "hi")
     end
 
+    it "accepts ISO 8601 dates" do
+      post "/api/v1/applications",
+           params: { company_name: "Acme", vacancy_title: "Ruby dev", applied_at: "2026-10-01T10:00:00Z", next_follow_up_at: "2026-10-08T10:00:00Z" },
+           headers: auth_headers, as: :json
+
+      expect(response).to have_http_status(:created)
+      expect(JobApplication.sole).to have_attributes(applied_at: Time.utc(2026, 10, 1, 10), next_follow_up_at: Time.utc(2026, 10, 8, 10))
+    end
+
     it "is 409 when the vacancy is already tracked" do
       post "/api/v1/applications", params: { company_name: "Acme", vacancy_title: "Ruby dev" }, headers: auth_headers, as: :json
       post "/api/v1/applications", params: { company_name: "acme", vacancy_title: "ruby dev" }, headers: auth_headers, as: :json
@@ -91,6 +100,14 @@ RSpec.describe "API V1 Applications", type: :request do
       expect(response).to have_http_status(:created)
       expect(response.parsed_body).to include("event_type" => "status_changed", "status" => "tech_interview")
       expect(application.reload).to be_tech_interview
+    end
+
+    it "schedules the next follow-up from a follow_up_sent event" do
+      post "/api/v1/applications/#{application.id}/events",
+           params: { event_type: "follow_up_sent", next_follow_up_at: "2026-10-20T09:00:00Z" }, headers: auth_headers, as: :json
+
+      expect(response).to have_http_status(:created)
+      expect(application.reload.next_follow_up_at).to eq(Time.utc(2026, 10, 20, 9))
     end
 
     it "is 422 without a status for status_changed" do

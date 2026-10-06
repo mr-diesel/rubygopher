@@ -544,8 +544,16 @@ CREATE TABLE public.users (
     jti character varying NOT NULL,
     name character varying,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    vacancies_seen_at timestamp(6) without time zone
 );
+
+
+--
+-- Name: COLUMN users.vacancies_seen_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.users.vacancies_seen_at IS 'When the user last opened the vacancy feed; vacancies created after this count as new';
 
 
 --
@@ -1362,6 +1370,7 @@ ALTER TABLE ONLY public.user_skills
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261006112738'),
 ('20261006105137'),
 ('20260810091334'),
 ('20260731102548'),
