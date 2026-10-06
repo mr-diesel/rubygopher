@@ -4,4 +4,5 @@ class API < Grape::API
   mount Playground::API::Base => "/api/v1"
   mount Tracker::API::Base => "/api/v1"
   mount Notifications::API::Base => "/api/v1"
+  mount Agent::API::Base => "/api/v1"
 end

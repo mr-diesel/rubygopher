@@ -6,6 +6,7 @@ module Tracker
       before { authenticate! }
 
       resource :outreaches do
+        desc "List cold outreach, newest first"
         params do
           optional :status, type: String, values: CompanyOutreach.statuses.keys
         end
@@ -15,6 +16,7 @@ module Tracker
           present scope.to_a, with: Entities::Outreach
         end
 
+        desc "Record a cold email or message to a company"
         params do
           requires :company_name, type: String
           optional :sent_at, type: DateTime
@@ -29,6 +31,7 @@ module Tracker
         end
 
         route_param :id, type: Integer do
+          desc "One outreach with its status history"
           get do
             outreach = current_user.company_outreaches.includes(:company, :events).find_by(id: params[:id])
             fail!([ :not_found ]) unless outreach
@@ -36,6 +39,7 @@ module Tracker
             present outreach, with: Entities::Outreach, full: true
           end
 
+          desc "Change the outreach status"
           params do
             requires :status, type: String, values: CompanyOutreach.statuses.keys
             optional :comment, type: String

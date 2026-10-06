@@ -456,7 +456,8 @@ body {
 .out-error details pre { color: var(--text-dim); font-size: 0.8rem; }
 
 /* Header digest: follow-ups due and new vacancies */
-.digest { position: relative; margin-left: auto; }
+.digest { position: relative; }
+.digest:first-of-type { margin-left: auto; }
 
 .digest-btn {
   background: var(--btn);
@@ -576,3 +577,28 @@ body {
 .form-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .form-row .field-label { display: flex; flex-direction: column; gap: 0.2rem; }
 .form-error { color: var(--danger); margin: 0; }
+
+.settings-panel { width: 28rem; }
+.settings-block { display: flex; flex-direction: column; gap: 0.5rem; }
+.settings-block .dim { margin: 0; }
+.settings-block a { color: var(--accent); }
+.token {
+  display: block;
+  padding: 0.5rem;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: ui-monospace, monospace;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.settings-block .ghost {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.35rem 0.7rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+}
+.settings-block .ghost.danger { border-color: var(--danger); color: var(--danger); }

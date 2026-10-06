@@ -5,6 +5,7 @@ module Identity
 
       mount Identity::API::Registrations
       mount Identity::API::Sessions
+      mount Identity::API::ApiTokens
     end
   end
 end

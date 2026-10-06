@@ -3,7 +3,7 @@ module ApplicationCable
     identified_by :current_user
 
     def connect
-      self.current_user = Identity::Authenticate.call(request.params[:token]) || reject_unauthorized_connection
+      self.current_user = Identity::Authenticate.call(request.params[:token])&.user || reject_unauthorized_connection
     end
   end
 end

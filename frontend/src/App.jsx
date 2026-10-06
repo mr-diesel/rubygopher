@@ -5,6 +5,7 @@ import Tracker from "./pages/Tracker";
 import Helper from "./pages/Helper";
 import Console from "./pages/Console";
 import DigestBadge from "./components/DigestBadge";
+import SettingsPanel from "./components/SettingsPanel";
 import { useDigest } from "./hooks/useDigest";
 
 const TAB_KEY = "tab";
@@ -49,6 +50,7 @@ function Shell({ auth, tab, setTab }) {
         </nav>
 
         <DigestBadge digest={digest} onChange={refresh} />
+        <SettingsPanel />
 
         <button className="logout" onClick={auth.logout}>
           Logout

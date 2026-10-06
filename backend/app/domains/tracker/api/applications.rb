@@ -6,6 +6,7 @@ module Tracker
       before { authenticate! }
 
       resource :applications do
+        desc "List the user's applications, newest activity first"
         params do
           optional :status, type: String, values: JobApplication.statuses.keys
           optional :archived, type: Boolean, default: false
@@ -17,6 +18,7 @@ module Tracker
           present scope.to_a, with: Entities::Application
         end
 
+        desc "Record an application: a job-board link alone, or company_name + vacancy_title"
         params do
           optional :url, type: String, desc: "vacancy link; hh.ru, career.habr.com and getmatch.ru links resolve the vacancy by themselves"
           optional :company_name, type: String
@@ -37,6 +39,7 @@ module Tracker
         end
 
         route_param :id, type: Integer do
+          desc "One application with its full history"
           get do
             application = current_user.job_applications.includes(:company, :vacancy, :via_posting, :events).find_by(id: params[:id])
             fail!([ :not_found ]) unless application
@@ -44,6 +47,7 @@ module Tracker
             present application, with: Entities::Application, full: true
           end
 
+          desc "Append an event: status change, note, interview, follow-up"
           params do
             requires :event_type, type: String, values: JobApplicationEvent.event_types.keys
             optional :status, type: String, values: JobApplication.statuses.keys

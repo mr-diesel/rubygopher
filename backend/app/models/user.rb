@@ -18,6 +18,30 @@ class User < ApplicationRecord
   has_many :user_question_orders, dependent: :destroy
   has_many :user_category_orders, dependent: :destroy
 
+  # Shown in the cabinet, so it is encrypted rather than hashed; deterministic so find_by works.
+  encrypts :api_token, deterministic: true
+
+  API_TOKEN_PREFIX = "rg_".freeze
+
+  def self.find_by_api_token(raw)
+    return unless raw.is_a?(String) && raw.start_with?(API_TOKEN_PREFIX)
+
+    find_by(api_token: raw)
+  end
+
+  def regenerate_api_token!
+    update!(api_token: API_TOKEN_PREFIX + SecureRandom.base58(32), api_token_generated_at: Time.current, api_token_last_used_at: nil)
+    api_token
+  end
+
+  def revoke_api_token!
+    update!(api_token: nil, api_token_generated_at: nil, api_token_last_used_at: nil)
+  end
+
+  def touch_api_token!
+    update_column(:api_token_last_used_at, Time.current)
+  end
+
   # Persist a personal ordering of questions within a category.
   def reorder_questions!(ordered_ids)
     transaction do

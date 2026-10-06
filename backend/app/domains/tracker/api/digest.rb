@@ -6,6 +6,7 @@ module Tracker
       before { authenticate! }
 
       resource :digest do
+        desc "Follow-ups due and upcoming, plus the count of new vacancies"
         get do
           digest = Queries::Digest.new(current_user)
           {
@@ -17,6 +18,7 @@ module Tracker
           }
         end
 
+        desc "Mark the vacancy feed as seen"
         post :vacancies_seen do
           current_user.update!(vacancies_seen_at: Time.current)
           status 204

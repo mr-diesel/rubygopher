@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { markFollowUpSent, markVacanciesSeen } from "../api/digest";
-import TelegramLink from "./TelegramLink";
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -71,11 +70,6 @@ export default function DigestBadge({ digest, onChange }) {
               ))}
             </section>
           )}
-
-          <section>
-            <h4>Notifications</h4>
-            <TelegramLink />
-          </section>
 
           <section>
             <h4>New vacancies</h4>

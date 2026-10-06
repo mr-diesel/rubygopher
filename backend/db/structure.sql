@@ -616,7 +616,10 @@ CREATE TABLE public.users (
     updated_at timestamp(6) without time zone NOT NULL,
     vacancies_seen_at timestamp(6) without time zone,
     telegram_chat_id bigint,
-    telegram_link_code character varying
+    telegram_link_code character varying,
+    api_token character varying,
+    api_token_generated_at timestamp(6) without time zone,
+    api_token_last_used_at timestamp(6) without time zone
 );
 
 
@@ -639,6 +642,20 @@ COMMENT ON COLUMN public.users.telegram_chat_id IS 'Telegram chat the notifier d
 --
 
 COMMENT ON COLUMN public.users.telegram_link_code IS 'One-time code sent to the bot as /start <code>; cleared once linked';
+
+
+--
+-- Name: COLUMN users.api_token; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.users.api_token IS 'Personal token for external AI assistants (rg_...), encrypted deterministically so it can be looked up';
+
+
+--
+-- Name: COLUMN users.api_token_last_used_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.users.api_token_last_used_at IS 'Touched on every authenticated API call; a surprise here is the cue to rotate';
 
 
 --
@@ -1241,6 +1258,13 @@ CREATE UNIQUE INDEX index_user_skills_on_user_id_and_skill_id ON public.user_ski
 
 
 --
+-- Name: index_users_on_api_token; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_users_on_api_token ON public.users USING btree (api_token) WHERE (api_token IS NOT NULL);
+
+
+--
 -- Name: index_users_on_email; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1484,6 +1508,7 @@ ALTER TABLE ONLY public.user_skills
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261006142428'),
 ('20261006134735'),
 ('20261006113413'),
 ('20261006112738'),
