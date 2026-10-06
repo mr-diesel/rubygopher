@@ -6,4 +6,6 @@ class Company < ApplicationRecord
   enum :source, { manual: 0, hh: 1, getmatch: 2, habr_career: 3 }
 
   validates :name, presence: true
+
+  scope :named, ->(name) { where("lower(name) = ?", name.to_s.strip.downcase) }
 end

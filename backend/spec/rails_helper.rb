@@ -72,6 +72,9 @@ RSpec.configure do |config|
 
   # Filter lines from Rails gems in backtraces.
   config.filter_rails_from_backtrace!
+
+  # spec/models → type: :model (shoulda-matchers only load for typed groups), spec/requests → :request.
+  config.infer_spec_type_from_file_location!
   # arbitrary gems may also be filtered via:
   # config.filter_gems_from_backtrace("gem name")
 

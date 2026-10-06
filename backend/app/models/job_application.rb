@@ -11,4 +11,8 @@ class JobApplication < ApplicationRecord
 
   validates :applied_at, presence: true
   validates :vacancy_id, uniqueness: { scope: :user_id }
+
+  scope :active, -> { where(archived_at: nil) }
+  scope :archived, -> { where.not(archived_at: nil) }
+  scope :follow_up_due, ->(at = Time.current) { active.where(next_follow_up_at: ..at) }
 end

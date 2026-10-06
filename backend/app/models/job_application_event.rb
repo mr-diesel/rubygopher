@@ -8,6 +8,7 @@ class JobApplicationEvent < ApplicationRecord
                   tech_interview: 3, offer: 4, rejected: 5 }, prefix: :status
 
   validates :occurred_at, presence: true
+  validates :status, presence: true, if: :status_changed?
 
   # Append-only log: records are immutable once created.
   def readonly?

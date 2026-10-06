@@ -11,4 +11,6 @@ class Vacancy < ApplicationRecord
   enum :work_mode, { onsite: 0, hybrid: 1, remote: 2 }
 
   validates :title, presence: true
+
+  scope :titled, ->(title) { where("lower(title) = ?", title.to_s.strip.downcase) }
 end

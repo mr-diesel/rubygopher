@@ -38,7 +38,7 @@ Note: the dev image installs `postgresql-client-18` from PGDG because `db/struct
 ## Backend architecture
 
 ### Domain layout (`app/domains/`)
-Business logic is organized by domain, not by Rails layer. Each domain (`identity/`, `interview/`) is a Ruby module namespace containing its own `api/`, `operations/`, and `contracts/` subdirs. These paths are autoloaded (`config.autoload_lib` + default app autoload). ActiveRecord models still live in the flat `app/models/`.
+Business logic is organized by domain, not by Rails layer. Each domain (`identity/`, `interview/`, `playground/`, `tracker/`) is a Ruby module namespace containing its own `api/`, `operations/`, and `contracts/` subdirs (plus `channels/`, `jobs/`, `api/entities/` where needed). These paths are autoloaded (`config.autoload_lib` + default app autoload). ActiveRecord models still live in the flat `app/models/`.
 
 ### API is Grape, not Rails controllers
 The user-facing JSON API is built with **Grape**, mounted in `config/routes.rb` via `mount API => "/"`. Mount chain:
@@ -47,13 +47,17 @@ The user-facing JSON API is built with **Grape**, mounted in `config/routes.rb` 
 API (app/api/api.rb)
  └─ Identity::API::Base    → /api/v1  (Registrations, Sessions)
  └─ Interview::API::Base   → /api/v1  (Questions — interview_questions + interview_categories)
- └─ Playground::API::Base  → /api/v1  (Console — POST /console/eval)
+ └─ Playground::API::Base  → /api/v1  (Console — POST /console/eval; Sessions)
+ └─ Tracker::API::Base     → /api/v1  (Applications — job applications + events; Outreaches — cold outreach + status history)
 ```
 
 Auth for the API is a hand-rolled JWT check: `Identity::Authenticate.call(token)` decodes the Warden JWT and honors Devise's JTIMatcher revocation; `Identity::API::AuthHelpers` (`current_user` / `authenticate!`) wraps it for Grape and `ApplicationCable::Connection` for WebSockets (JWT in the `token` query param). Reuse these in any new domain API or channel — do not add a second auth path.
 
 ### dry-rb operations
 Multi-step business logic is a `Dry::Operation` subclass (`dry-operation`, the successor of the deprecated `dry-transaction`): `#call` lists the happy path, each `step` unwraps a `Success` or halts the flow on the first `Failure`, and the input is validated by a `dry-validation` contract. Canonical example: `Identity::Operations::SignUp` (validate → create_user → issue_token) with `Contracts::SignUpContract`. Steps are private methods returning `Success`/`Failure` from `dry-monads`; wrap multi-row writes in `transaction { }` via `Dry::Operation::Extensions::ActiveRecord`. Follow this pattern for new write operations rather than stuffing logic into the Grape endpoint.
+
+### Tracker domain (job applications)
+`Tracker::Operations::RecordApplication.call(user, input)` is the canonical multi-step operation: validate (`Contracts::RecordApplicationContract`) → inside `transaction { }` find-or-create `Company` (`Company.named`, case-insensitive) and `Vacancy` (`Vacancy.titled`) → `ensure_untracked` (one application per user+vacancy, `Failure([:duplicate, existing])` → 409) → create the `JobApplication` with `last_activity_at = applied_at` → first `JobApplicationEvent` (`status_changed` → `applied`). `Operations::AddEvent.call(user, application_id, input)` appends an event and keeps the denormalised columns in step: `status` on `status_changed` (status required there), `last_activity_at` always, `next_follow_up_at` whenever the key is given (nil clears it). Cold outreach mirrors it: `Operations::RecordOutreach` (one per user+company, first event `no_response` at `sent_at`) and `Operations::ChangeOutreachStatus` (event + status; outreach events are status changes only). Failures are `[kind, payload]` tuples mapped by `fail!` in `Tracker::API::Helpers` (`:invalid` 422, `:duplicate` 409, `:not_found` 404); authorization is `current_user.job_applications` / `current_user.company_outreaches` everywhere. Responses use grape-entity (`Tracker::API::Entities::Application` / `Event`, `full: true` adds events). `Dry::Operation::Extensions::ActiveRecord` is not autoloaded by the gem (its loader ignores `extensions/*.rb`), so every operation that uses `transaction { }` starts with `require "dry/operation/extensions/active_record"`; a boot-time initializer was tried first and left the constant missing on the very first request after boot in development. Scopes: `JobApplication.active/archived/follow_up_due`.
 
 ### Two auth realms (don't cross them)
 - **Admin** — Devise `:database_authenticatable` session, `devise_for :admins` with full web routes. Controllers live under `AdminArea::` (module `admin_area`, URL still `/admin`). The `AdminArea` name deliberately avoids clashing with the `Admin` model.
@@ -108,4 +112,4 @@ Plain Vite 8 + React 19 (no router, no state library). `App.jsx` switches betwee
 
 ## Testing
 
-RSpec + FactoryBot + shoulda-matchers + rspec-sidekiq. Generators are configured for RSpec/FactoryBot only (no view/helper/routing specs). Specs are split into `spec/models/` and `spec/requests/api/v1/` (full Grape API request specs). Factories in `spec/factories/`.
+RSpec + FactoryBot + shoulda-matchers + rspec-sidekiq. Generators are configured for RSpec/FactoryBot only (no view/helper/routing specs). Specs are split into `spec/models/`, `spec/domains/<domain>/` (operations, channels, jobs) and `spec/requests/api/v1/` (full Grape API request specs); `infer_spec_type_from_file_location!` is on, so shoulda-matchers work in `spec/models`. Factories in `spec/factories/`.
