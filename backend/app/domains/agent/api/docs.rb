@@ -11,7 +11,7 @@ module Agent
       get "agent/guide" do
         content_type "text/markdown"
         env["api.format"] = :txt
-        File.read(Rails.root.join("app/domains/agent/GUIDE.md"))
+        Agent::Guide.text
       end
     end
   end

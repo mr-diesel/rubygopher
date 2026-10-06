@@ -31,6 +31,7 @@ gem "karafka", "~> 2.6"          # Kafka consumers (+ WaterDrop producer): outbo
 gem "grape", "~> 4.0"            # API framework for the user-facing portal
 gem "grape-entity", "~> 1.1"    # response serialization for Grape
 gem "rack-cors", "~> 3.0", require: "rack/cors"
+gem "mcp", "~> 1.7"             # Model Context Protocol server: the tracker as tools for browser assistants
 
 # --- Auth ---
 gem "devise", "~> 5.0"          # authentication: Admin (session) + User (JWT base)

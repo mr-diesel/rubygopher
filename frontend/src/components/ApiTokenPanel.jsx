@@ -3,6 +3,7 @@ import { apiTokenStatus, regenerateApiToken, revokeApiToken } from "../api/apiTo
 import { API_BASE } from "../config";
 
 const fmt = (iso) => (iso ? new Date(iso).toLocaleString() : "never");
+const ROOT = API_BASE.replace(/\/api\/v1$/, "");
 
 export default function ApiTokenPanel() {
   const [state, setState] = useState(null);
@@ -47,6 +48,10 @@ export default function ApiTokenPanel() {
             <button className="ghost" onClick={regenerate}>Regenerate</button>
             <button className="ghost danger" onClick={revoke}>Revoke</button>
           </div>
+          <p className="dim">
+            Browser assistants (claude.ai, ChatGPT and any other MCP client) connect to this URL as a custom connector; the token is inside it, so treat it as a secret:
+          </p>
+          <code className="token">{`${ROOT}/mcp/${state.token}`}</code>
         </>
       ) : (
         <div className="form-actions">
