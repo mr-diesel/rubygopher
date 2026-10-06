@@ -602,3 +602,35 @@ body {
   font: inherit;
 }
 .settings-block .ghost.danger { border-color: var(--danger); color: var(--danger); }
+
+/* Funnel: stat tiles plus one-series horizontal bars with direct labels */
+.funnel { max-width: 56rem; display: flex; flex-direction: column; gap: 1.25rem; }
+.funnel-bar { display: flex; }
+
+.stat-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.75rem; }
+.stat-tile {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.stat-tile strong { font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+.stat-tile span { color: var(--text-dim); font-size: 0.85rem; }
+
+.funnel-section h4 { margin: 0 0 0.5rem; color: var(--text-dim); text-transform: uppercase; font-size: 0.8rem; }
+.funnel-table { width: 100%; border-collapse: collapse; }
+.funnel-table th { text-align: left; font-weight: normal; width: 9rem; padding: 0.3rem 0.5rem 0.3rem 0; }
+.funnel-table tr:hover td, .funnel-table tr:hover th { background: var(--panel); }
+.funnel-cell { position: relative; height: 1.5rem; padding: 0.2rem 0; }
+.funnel-fill {
+  height: 100%;
+  min-width: 2px;
+  background: var(--accent);
+  border-radius: 0 4px 4px 0;
+  transition: width 0.3s ease;
+}
+.funnel-count { position: absolute; left: 0.4rem; top: 50%; transform: translateY(-50%); font-variant-numeric: tabular-nums; color: var(--text); mix-blend-mode: difference; }
+.funnel-pct { width: 5rem; text-align: right; color: var(--text-dim); font-variant-numeric: tabular-nums; padding-left: 0.5rem; }

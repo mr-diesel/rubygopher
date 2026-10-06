@@ -6,6 +6,7 @@ module Tracker
       mount Tracker::API::Applications
       mount Tracker::API::Outreaches
       mount Tracker::API::Digest
+      mount Tracker::API::Funnel
     end
   end
 end

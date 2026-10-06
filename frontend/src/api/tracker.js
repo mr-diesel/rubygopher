@@ -14,3 +14,5 @@ export const listOutreaches = (params = {}) => request(`/outreaches${query(param
 export const getOutreach = (id) => request(`/outreaches/${id}`);
 export const createOutreach = (data) => request("/outreaches", { method: "POST", body: data });
 export const changeOutreachStatus = (id, data) => request(`/outreaches/${id}/status`, { method: "POST", body: data });
+
+export const fetchFunnel = (since) => request(`/funnel${query({ since })}`);

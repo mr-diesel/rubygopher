@@ -6,17 +6,20 @@ import ApplicationDetail from "../components/tracker/ApplicationDetail";
 import OutreachDetail from "../components/tracker/OutreachDetail";
 import NewApplicationForm from "../components/tracker/NewApplicationForm";
 import NewOutreachForm from "../components/tracker/NewOutreachForm";
+import FunnelView from "../components/tracker/FunnelView";
 
 const KINDS = [
   { id: "applications", label: "Applications", statuses: APPLICATION_STATUSES },
-  { id: "outreaches", label: "Cold outreach", statuses: OUTREACH_STATUSES }
+  { id: "outreaches", label: "Cold outreach", statuses: OUTREACH_STATUSES },
+  { id: "funnel", label: "Funnel", statuses: [] }
 ];
 
 export default function Tracker() {
   const [kind, setKind] = useState("applications");
   const [status, setStatus] = useState("");
   const [creating, setCreating] = useState(false);
-  const { items, loading, selectedId, detail, select, reload } = useTrackerList(kind, status);
+  const listKind = kind === "funnel" ? "applications" : kind;
+  const { items, loading, selectedId, detail, select, reload } = useTrackerList(listKind, status);
 
   const switchKind = (next) => {
     setKind(next);
@@ -30,6 +33,21 @@ export default function Tracker() {
   };
 
   const current = KINDS.find((k) => k.id === kind);
+
+  if (kind === "funnel") {
+    return (
+      <div className="helper tracker">
+        <div className="q-col tracker-col">
+          <div className="segmented">
+            {KINDS.map((k) => (
+              <button key={k.id} className={k.id === kind ? "active" : ""} onClick={() => switchKind(k.id)}>{k.label}</button>
+            ))}
+          </div>
+        </div>
+        <div className="helper-main"><FunnelView /></div>
+      </div>
+    );
+  }
 
   return (
     <div className="helper tracker">
