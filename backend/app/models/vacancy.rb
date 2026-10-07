@@ -12,5 +12,8 @@ class Vacancy < ApplicationRecord
 
   validates :title, presence: true
 
+  # Per-user marks filled by Aggregator::Queries::Feed; not persisted.
+  attr_accessor :new_for_user, :application_id
+
   scope :titled, ->(title) { where("lower(title) = ?", title.to_s.strip.downcase) }
 end

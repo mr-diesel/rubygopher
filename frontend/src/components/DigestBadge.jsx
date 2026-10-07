@@ -5,7 +5,7 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 const daysOverdue = (iso) => Math.floor((Date.now() - new Date(iso)) / (24 * 60 * 60 * 1000));
 
-export default function DigestBadge({ digest, onChange }) {
+export default function DigestBadge({ digest, onChange, onOpenVacancies }) {
   const [open, setOpen] = useState(false);
   const root = useRef(null);
 
@@ -75,11 +75,14 @@ export default function DigestBadge({ digest, onChange }) {
             <h4>New vacancies</h4>
             <div className="digest-row">
               <span>{newVacancies ? `${newVacancies} new since ${new Date(digest.new_vacancies.since).toLocaleDateString()}` : "No new vacancies yet."}</span>
-              {newVacancies > 0 && (
-                <button className="ghost" onClick={seen}>
-                  Mark seen
-                </button>
-              )}
+              <span className="digest-row__buttons">
+                <button className="ghost" onClick={() => { setOpen(false); onOpenVacancies?.(); }}>Open feed</button>
+                {newVacancies > 0 && (
+                  <button className="ghost" onClick={seen}>
+                    Mark seen
+                  </button>
+                )}
+              </span>
             </div>
           </section>
         </div>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth } from "./hooks/useAuth";
 import Login from "./pages/Login";
 import Tracker from "./pages/Tracker";
+import Vacancies from "./pages/Vacancies";
 import Helper from "./pages/Helper";
 import Console from "./pages/Console";
 import DigestBadge from "./components/DigestBadge";
@@ -12,6 +13,7 @@ const TAB_KEY = "tab";
 
 const TABS = [
   { id: "tracker", label: "Tracker", render: () => <Tracker /> },
+  { id: "vacancies", label: "Vacancies", render: ({ refreshDigest }) => <Vacancies onDigestChange={refreshDigest} /> },
   { id: "helper", label: "Interview Helper", render: () => <Helper /> },
   { id: "console", label: "Live console", render: () => <Console /> }
 ];
@@ -49,7 +51,7 @@ function Shell({ auth, tab, setTab }) {
           ))}
         </nav>
 
-        <DigestBadge digest={digest} onChange={refresh} />
+        <DigestBadge digest={digest} onChange={refresh} onOpenVacancies={() => select("vacancies")} />
         <SettingsPanel />
 
         <button className="logout" onClick={auth.logout}>
@@ -57,7 +59,7 @@ function Shell({ auth, tab, setTab }) {
         </button>
       </header>
 
-      {active.render()}
+      {active.render({ refreshDigest: refresh })}
     </div>
   );
 }
