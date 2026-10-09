@@ -12,7 +12,6 @@ module Playground
         end
         post do
           session = ConsoleSession.create!(declared(params).to_h)
-          Playground::Jobs::PurgeConsoleSessionsJob.perform_later
           status 201
           session.state
         end

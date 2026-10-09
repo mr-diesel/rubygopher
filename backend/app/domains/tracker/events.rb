@@ -22,6 +22,10 @@ module Tracker
              outreach_payload(outreach).merge("event" => event.slice(:id, :status, :comment, :changed_at)), user: outreach.user)
     end
 
+    def self.follow_up_due(application)
+      record("application.follow_up_due", application.user_id, application_payload(application), user: application.user)
+    end
+
     def self.telegram_linked(user)
       record("user.telegram_linked", user.id, {}, user: user)
     end

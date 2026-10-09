@@ -5,4 +5,6 @@ class VacancyPosting < ApplicationRecord
 
   validates :external_id, presence: true, uniqueness: { scope: :source }
   validates :url, presence: true
+
+  scope :active, -> { where(active: true) }
 end

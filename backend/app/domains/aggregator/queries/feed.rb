@@ -26,7 +26,7 @@ module Aggregator
       private
 
       def base
-        Vacancy.where(id: VacancyPosting.where.not(source: :manual).select(:vacancy_id))
+        Vacancy.where(id: VacancyPosting.active.where.not(source: :manual).select(:vacancy_id))
       end
 
       def filtered(scope)

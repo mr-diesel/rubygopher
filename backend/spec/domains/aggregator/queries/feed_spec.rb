@@ -21,6 +21,14 @@ RSpec.describe Aggregator::Queries::Feed do
     expect(page.total).to eq(2)
   end
 
+  it "hides vacancies whose postings were all closed" do
+    gone = aggregated("Gone")
+    gone.postings.update_all(active: false)
+    aggregated("Still here")
+
+    expect(described_class.new(user).call.vacancies.map(&:title)).to eq([ "Still here" ])
+  end
+
   it "marks what is new and what the user already applied to" do
     fresh = aggregated("Fresh")
     old = aggregated("Old", created_at: 5.days.ago)

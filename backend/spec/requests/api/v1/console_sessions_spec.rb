@@ -22,12 +22,6 @@ RSpec.describe "API V1 Console sessions", type: :request do
       expect(response.parsed_body).to include("code" => "p 1", "context" => "ruby", "result" => nil)
       expect(response.parsed_body["token"]).to be_present
     end
-
-    it "enqueues the purge of stale sessions" do
-      post "/api/v1/console/sessions", headers: auth_headers, as: :json
-
-      expect(Playground::Jobs::PurgeConsoleSessionsJob).to have_been_enqueued
-    end
   end
 
   describe "GET /api/v1/console/sessions/:token" do

@@ -96,6 +96,9 @@ GEM
       bigdecimal
       rexml
     crass (1.0.7)
+    cronex (0.15.0)
+      tzinfo
+      unicode (>= 0.4.4.5)
     dartsass-rails (0.5.1)
       railties (>= 6.0.0)
       sass-embedded (~> 1.63)
@@ -166,6 +169,8 @@ GEM
       zeitwerk (~> 2.6)
     erb (6.0.7)
     erubi (1.13.1)
+    et-orbi (1.4.2)
+      tzinfo
     factory_bot (6.6.0)
       activesupport (>= 6.1.0)
     factory_bot_rails (6.5.1)
@@ -179,6 +184,9 @@ GEM
     ffi (1.17.4-x86_64-darwin)
     ffi (1.17.4-x86_64-linux-gnu)
     ffi (1.17.4-x86_64-linux-musl)
+    fugit (1.14.0)
+      et-orbi (~> 1.4)
+      raabro (~> 1.4)
     globalid (1.4.0)
       activesupport (>= 6.1)
     google-protobuf (4.36.2)
@@ -353,6 +361,7 @@ GEM
     public_suffix (7.0.5)
     puma (8.0.2)
       nio4r (~> 2.0)
+    raabro (1.5.0)
     racc (1.8.1)
     rack (3.2.7)
     rack-cors (3.0.0)
@@ -496,6 +505,11 @@ GEM
       logger (>= 1.7.0)
       rack (>= 3.2.0)
       redis-client (>= 0.29.0)
+    sidekiq-cron (2.4.0)
+      cronex (>= 0.13.0)
+      fugit (~> 1.8, >= 1.11.1)
+      globalid (>= 1.0.1)
+      sidekiq (>= 6.5.0)
     simpleidn (0.3.0)
     slim (5.2.2)
       temple (~> 0.10.0)
@@ -521,6 +535,7 @@ GEM
       railties (>= 7.1.0)
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
+    unicode (0.4.4.5)
     unicode-display_width (3.3.0)
       unicode-emoji (~> 4.3)
     unicode-emoji (4.3.0)
@@ -595,6 +610,7 @@ DEPENDENCIES
   ruby-vips (~> 2.3)
   shoulda-matchers (~> 8.0)
   sidekiq (~> 8.1)
+  sidekiq-cron (~> 2.4)
   slim-rails (~> 4.0)
   stimulus-rails
   thruster

@@ -17,6 +17,12 @@ func Format(e event.Event) string {
 		return fmt.Sprintf("📨 Отклик записан: <b>%s</b> — %s", company, vacancy)
 	case "application.event_added":
 		return applicationEvent(e, company, vacancy)
+	case "application.follow_up_due":
+		msg := fmt.Sprintf("⏰ Пора напомнить о себе: <b>%s</b> — %s", company, vacancy)
+		if e.NextFollowUpAt != "" {
+			msg += "\nFollow-up был запланирован на " + e.NextFollowUpAt
+		}
+		return msg
 	case "outreach.recorded":
 		return fmt.Sprintf("✉️ Письмо отправлено: <b>%s</b>", company)
 	case "outreach.status_changed":

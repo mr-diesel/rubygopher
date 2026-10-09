@@ -361,8 +361,16 @@ CREATE TABLE public.job_applications (
     next_follow_up_at timestamp(6) without time zone,
     archived_at timestamp(6) without time zone,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    follow_up_reminded_at timestamp(6) without time zone
 );
+
+
+--
+-- Name: COLUMN job_applications.follow_up_reminded_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.job_applications.follow_up_reminded_at IS 'When the reminder for the current next_follow_up_at was sent; a new follow-up date resets the cycle';
 
 
 --
@@ -1508,6 +1516,7 @@ ALTER TABLE ONLY public.user_skills
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261009141411'),
 ('20261006142428'),
 ('20261006134735'),
 ('20261006113413'),
