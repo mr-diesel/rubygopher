@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jobs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jobs
+  template:
+    metadata:
+      labels:
+        app: jobs
+    spec:
+      containers:
+        - name: sidekiq
+          image: backend
+          command: ["bundle", "exec", "sidekiq", "-C", "config/sidekiq.yml"]
+          envFrom:
+            - configMapRef:
+                name: rubygopher-config
+            - secretRef:
+                name: rubygopher-secrets
+          resources:
+            requests: { cpu: 100m, memory: 512Mi }
+            limits: { memory: 1Gi }

@@ -1,0 +1,22 @@
+# Non-secret settings shared by the Rails processes and the Go services.
+# Secrets (RAILS_MASTER_KEY, DB_PASSWORD, TELEGRAM_BOT_TOKEN, HH_TOKEN) live in the
+# rubygopher-secrets Secret: see ../secrets.example.yaml.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rubygopher-config
+data:
+  DB_HOST: postgres
+  DB_USERNAME: postgres
+  DB_NAME: rubygopher_production
+  REDIS_URL: redis://redis:6379/0
+  KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  KAFKA_BROKERS: kafka:9092
+  RAILS_LOG_TO_STDOUT: "true"
+  FRONTEND_ORIGIN: https://rubygopher.example.com
+  PUBLIC_HOST: api.rubygopher.example.com
+  TELEGRAM_BOT_USERNAME: ""
+  FETCH_INTERVAL: 15m
+  FETCH_SOURCES: hh,habr_career,hirify,getmatch
+  FETCH_QUERIES: ruby,go
+  HIRIFY_REMOTE_TYPES: russia

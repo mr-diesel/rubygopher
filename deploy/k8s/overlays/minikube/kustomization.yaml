@@ -1,0 +1,60 @@
+# Local verification on minikube with images loaded by hand:
+#   docker build -t rubygopher_backend:prod backend
+#   docker build --build-arg VITE_API_BASE=http://api.rubygopher.local/api/v1 -t rubygopher_frontend:minikube frontend
+#   docker compose build fetcher notifier
+#   minikube -p rubygopher image load rubygopher_backend:prod rubygopher_frontend:minikube rubygopher_fetcher:dev rubygopher_notifier:dev
+#   cp deploy/k8s/overlays/minikube/secrets.env.example deploy/k8s/overlays/minikube/secrets.env   # put backend/config/master.key into it
+#   kubectl apply -k deploy/k8s/overlays/minikube
+#   echo "$(minikube -p rubygopher ip) rubygopher.local api.rubygopher.local" | sudo tee -a /etc/hosts
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: rubygopher
+resources:
+  - ../../base
+images:
+  - name: registry.gitlab.com/mr-diesel/rubygopher/backend
+    newName: rubygopher_backend
+    newTag: prod
+  - name: registry.gitlab.com/mr-diesel/rubygopher/frontend
+    newName: rubygopher_frontend
+    newTag: minikube
+  - name: registry.gitlab.com/mr-diesel/rubygopher/fetcher
+    newName: rubygopher_fetcher
+    newTag: dev
+  - name: registry.gitlab.com/mr-diesel/rubygopher/notifier
+    newName: rubygopher_notifier
+    newTag: dev
+generatorOptions:
+  disableNameSuffixHash: true
+secretGenerator:
+  - name: rubygopher-secrets
+    envs:
+      - secrets.env
+configMapGenerator:
+  - name: rubygopher-config
+    behavior: merge
+    literals:
+      - FRONTEND_ORIGIN=http://rubygopher.local
+      - PUBLIC_HOST=api.rubygopher.local
+patches:
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Never
+  - target:
+      kind: Job
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Never
+  - target:
+      kind: Ingress
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: rubygopher.local
+      - op: replace
+        path: /spec/rules/1/host
+        value: api.rubygopher.local

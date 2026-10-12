@@ -20,3 +20,7 @@
 # Personal Claude Code config (working rules, skills, local permissions)
 /CLAUDE.local.md
 /.claude/
+
+# Real Kubernetes secrets (see deploy/k8s/secrets.example.yaml)
+/deploy/k8s/secrets.yaml
+/deploy/k8s/overlays/minikube/secrets.env

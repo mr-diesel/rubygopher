@@ -1,0 +1,31 @@
+# TLS termination belongs to the ingress controller (cert-manager annotations go here);
+# Rails runs with assume_ssl + force_ssl behind it.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rubygopher
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 1m
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: rubygopher.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+    - host: api.rubygopher.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 80

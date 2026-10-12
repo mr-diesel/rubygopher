@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fetcher
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fetcher
+  template:
+    metadata:
+      labels:
+        app: fetcher
+    spec:
+      containers:
+        - name: fetcher
+          image: fetcher
+          envFrom:
+            - configMapRef:
+                name: rubygopher-config
+          env:
+            - name: HH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: rubygopher-secrets
+                  key: HH_TOKEN
+                  optional: true
+          resources:
+            requests: { cpu: 20m, memory: 32Mi }
+            limits: { memory: 128Mi }

@@ -112,6 +112,18 @@ Every deployable part has a multi-stage Dockerfile that produces a small non-roo
 
 The `build` stage of the pipeline builds all five with Docker-in-Docker on every branch and pushes them to the GitLab registry as `<registry>/<image>:<sha>` and `:latest` from `main` (set `VITE_API_BASE` as a CI variable for the frontend).
 
+## Deploying to Kubernetes
+
+`deploy/k8s/base` is a kustomize base for one cluster: Postgres, Redis and a single-node KRaft Kafka as StatefulSets with persistent volumes, a `migrate` Job (`db:prepare db:seed` + `karafka topics migrate`) that runs before the Rails pods, Deployments for `web` (Thruster + Puma behind the Service, `/up` probes, 2 replicas, `SKIP_DB_PREPARE` so replicas never race on migrations), `jobs` (Sidekiq), `karafka`, `fetcher`, `notifier` and `frontend` (nginx, 2 replicas), and one Ingress with two hosts: the SPA and the API. Non-secret settings are a ConfigMap; secrets come from a `rubygopher-secrets` Secret you create from `deploy/k8s/secrets.example.yaml`. The console sandbox is not deployed: `PLAYGROUND_CONSOLE` stays off in production.
+
+```bash
+kubectl -n rubygopher delete job migrate --ignore-not-found   # a Job's template is immutable
+kubectl apply -k deploy/k8s/base
+kubectl -n rubygopher wait --for=condition=complete job/migrate --timeout=5m
+```
+
+`deploy/k8s/overlays/minikube` swaps in locally built images, test secrets and `*.local` hosts; the header of its `kustomization.yaml` lists the commands to run the whole stack on minikube.
+
 ## License
 
 MIT, see [LICENSE](LICENSE).

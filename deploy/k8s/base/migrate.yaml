@@ -1,0 +1,25 @@
+# Runs once per deploy, before the Rails pods roll: loads/migrates the schema, seeds the
+# skills dictionary and declares the Kafka topics. Web pods skip db:prepare themselves
+# (SKIP_DB_PREPARE), so two replicas never race on a fresh database.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: backend
+          command: ["sh", "-c", "bin/rails db:prepare db:seed && bundle exec karafka topics migrate"]
+          envFrom:
+            - configMapRef:
+                name: rubygopher-config
+            - secretRef:
+                name: rubygopher-secrets
+          resources:
+            requests: { cpu: 100m, memory: 512Mi }
+            limits: { memory: 1Gi }

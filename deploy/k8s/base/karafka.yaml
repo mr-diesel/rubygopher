@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: karafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: karafka
+  template:
+    metadata:
+      labels:
+        app: karafka
+    spec:
+      containers:
+        - name: karafka
+          image: backend
+          command: ["bundle", "exec", "karafka", "server"]
+          envFrom:
+            - configMapRef:
+                name: rubygopher-config
+            - secretRef:
+                name: rubygopher-secrets
+          resources:
+            requests: { cpu: 100m, memory: 512Mi }
+            limits: { memory: 1Gi }

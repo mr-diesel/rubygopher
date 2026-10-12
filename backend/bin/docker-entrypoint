@@ -1,7 +1,8 @@
 #!/bin/bash -e
 
-# If running the rails server then create or migrate existing database
-if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
+# If running the rails server then create or migrate existing database.
+# SKIP_DB_PREPARE=1 when a separate job does it (Kubernetes migrate Job).
+if [ -z "$SKIP_DB_PREPARE" ] && [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
   ./bin/rails db:prepare db:seed
 fi
 
