@@ -1,7 +1,9 @@
 # Run using bin/ci
 
 CI.run do
-  step "Setup", "bin/setup --skip-server"
+  # db:test:prepare first: on a fresh database db:prepare (inside bin/setup) also runs
+  # db:seed, and a seeded test database breaks specs that create dictionary rows.
+  step "Setup", "bin/rails db:test:prepare && bin/setup --skip-server"
 
   step "Tests: RSpec", "bundle exec rspec"
 
