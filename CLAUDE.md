@@ -29,11 +29,13 @@ bundle exec rspec                     # full test suite
 bundle exec rspec spec/models/user_spec.rb          # one file
 bundle exec rspec spec/requests/api/v1/interview_questions_spec.rb:42   # one example by line
 bin/rubocop                           # lint (rails-omakase style)
-bin/ci                                # full CI: setup, rubocop, bundler-audit, importmap audit, brakeman
+bin/ci                                # full CI: setup, rspec, rubocop, bundler-audit, importmap audit, brakeman (config/ci.rb)
 bin/rails db:prepare db:seed          # create + load db/structure.sql, upsert the skills dictionary (the web entrypoint does this on boot)
 ```
 
 Note: the dev image installs `postgresql-client-18` from PGDG because `db/structure.sql` is written by `pg_dump`, which must match the Postgres 18 server. The `web` container sets `RAILS_ENV=development`. `spec/rails_helper.rb` **force-sets `RAILS_ENV=test`** so specs never hit the dev DB — keep that override if you touch the helper.
+
+GitLab CI (`.gitlab-ci.yml`, every branch and MR): `backend` runs `bundle install && bin/ci` (`bin/ci` boots Bundler before `bin/setup` could install anything) in `ruby:4.0.7-slim` with `postgres:18-alpine` and `redis:8-alpine` service containers (`DB_HOST=postgres`, `REDIS_URL`, `RAILS_ENV=test`, gems cached in `vendor/bundle`, `postgresql-client-18` from PGDG so `psql` can load `structure.sql`); `go` is a matrix over `services/{sandboxd,fetcher,notifier}` (`gofmt -l`, `go vet`, `go test`; sandboxd tests that need `ruby` on PATH skip themselves); `frontend` is `npm ci && npm run build`. `config/environments/test.rb` pins the Active Record encryption keys and Devise JWT uses `Rails.application.secret_key_base`, so the suite needs no `master.key`.
 
 ## Backend architecture
 

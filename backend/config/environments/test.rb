@@ -7,6 +7,11 @@ Rails.application.configure do
   # Jobs are asserted with have_enqueued_job; Sidekiq itself is not exercised in specs.
   config.active_job.queue_adapter = :test
 
+  # Fixed keys so the suite runs without config/master.key (CI, fresh clones).
+  config.active_record.encryption.primary_key = "test-primary-key"
+  config.active_record.encryption.deterministic_key = "test-deterministic-key"
+  config.active_record.encryption.key_derivation_salt = "test-key-derivation-salt"
+
   # Settings specified here will take precedence over those in config/application.rb.
 
   # While tests run files are not watched, reloading is not necessary.

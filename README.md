@@ -1,5 +1,7 @@
 # RubyGopher
 
+[![pipeline status](https://gitlab.com/mr-diesel/rubygopher/badges/main/pipeline.svg)](https://gitlab.com/mr-diesel/rubygopher/-/pipelines)
+
 A job-search workbench for Ruby and Go developers, built as a public portfolio project.
 Rails backend, React portal, Go microservices, everything in Docker.
 
@@ -92,9 +94,11 @@ The console is enabled in development only; set `PLAYGROUND_CONSOLE=true` to ena
 
 ```bash
 docker compose run --rm web bundle exec rspec     # backend specs
-docker compose run --rm web bin/ci                # rubocop, bundler-audit, importmap audit, brakeman
+docker compose run --rm web bin/ci                # rspec, rubocop, bundler-audit, importmap audit, brakeman
 cd services/sandboxd && go test ./...             # Go unit tests (also run during the image build)
 ```
+
+GitLab CI (`.gitlab-ci.yml`) runs the same three things on every branch and merge request: `bin/ci` against Postgres 18 and Redis 8 service containers, `gofmt` + `go vet` + `go test` for each Go service in parallel, and the Vite production build. The test environment uses fixed Active Record encryption keys, so no secrets are needed to run the suite anywhere.
 
 ## License
 

@@ -1,0 +1,80 @@
+stages:
+  - test
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+
+default:
+  interruptible: true
+
+backend:
+  stage: test
+  image: ruby:4.0.7-slim
+  services:
+    - name: postgres:18-alpine
+      alias: postgres
+    - name: redis:8-alpine
+      alias: redis
+  variables:
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+    POSTGRES_DB: rubygopher_test
+    DB_HOST: postgres
+    REDIS_URL: redis://redis:6379/0
+    RAILS_ENV: test
+    BUNDLE_PATH: vendor/bundle
+    BUNDLE_JOBS: "4"
+    DEBIAN_FRONTEND: noninteractive
+  cache:
+    key:
+      files:
+        - backend/Gemfile.lock
+    paths:
+      - backend/vendor/bundle
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y --no-install-recommends build-essential git libpq-dev libyaml-dev pkg-config libvips curl ca-certificates
+    - install -d /usr/share/postgresql-common/pgdg
+    - curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+    - echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt trixie-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+    - apt-get update -qq && apt-get install -y --no-install-recommends postgresql-client-18
+    - cd backend
+  script:
+    - bundle install
+    - bin/ci
+
+go:
+  stage: test
+  image: golang:1.27-alpine
+  parallel:
+    matrix:
+      - SERVICE: [sandboxd, fetcher, notifier]
+  variables:
+    GOMODCACHE: $CI_PROJECT_DIR/.go/mod
+    GOCACHE: $CI_PROJECT_DIR/.go/build
+    CGO_ENABLED: "0"
+  cache:
+    key: go-$SERVICE
+    paths:
+      - .go/
+  script:
+    - cd services/$SERVICE
+    - test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
+    - go vet ./...
+    - go test ./...
+
+frontend:
+  stage: test
+  image: node:26-alpine
+  cache:
+    key:
+      files:
+        - frontend/package-lock.json
+    paths:
+      - frontend/node_modules
+  script:
+    - cd frontend
+    - npm ci --no-audit --no-fund
+    - npm run build

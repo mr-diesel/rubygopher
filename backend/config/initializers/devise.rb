@@ -314,7 +314,7 @@ Devise.setup do |config|
   # ==> Configuration for :jwt_authenticatable (devise-jwt), used by the User model.
   # Tokens are signed with this secret. Keep it out of source control.
   config.jwt do |jwt|
-    jwt.secret = ENV.fetch("DEVISE_JWT_SECRET_KEY") { Rails.application.credentials.secret_key_base }
+    jwt.secret = ENV.fetch("DEVISE_JWT_SECRET_KEY") { Rails.application.secret_key_base }
     jwt.expiration_time = 1.day.to_i
 
     # Which requests issue a token (login) and which revoke it (logout).
