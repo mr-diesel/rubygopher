@@ -143,7 +143,51 @@ module Agent
         end
       end
 
-      ALL = [ RecordApplication, AddApplicationEvent, ListApplications, GetApplication, RecordOutreach, ChangeOutreachStatus, ListOutreaches, Digest, Funnel, InterviewPrompt ].freeze
+      class ListVacancies < BaseTool
+        tool_name "list_vacancies"
+        description "The aggregated Ruby/Go vacancy feed (hh.ru, Habr Career, getmatch, hirify), newest first, 30 per page. Filters combine with AND; `skill` is a slug from list_skills. Each vacancy carries `new` (appeared since the user last looked) and `application_id` (already applied). Use the first posting's url with record_application."
+        input_schema(
+          properties: {
+            language: { type: "string", enum: ::Vacancy.languages.keys },
+            work_mode: { type: "string", enum: ::Vacancy.work_modes.keys },
+            source: { type: "string", enum: VacancyPosting.sources.keys - [ "manual" ] },
+            skill: { type: "string", description: "skill slug, e.g. kafka" },
+            only_new: { type: "boolean" },
+            q: { type: "string", description: "substring of the title or description" },
+            page: { type: "integer" }
+          }
+        )
+
+        def self.call(server_context:, page: 1, **filters)
+          feed = Aggregator::Queries::Feed.new(user(server_context), page: page, **filters).call
+          ok(vacancies: Aggregator::API::Entities::Vacancy.represent(feed.vacancies), total: feed.total, page: feed.page, per_page: feed.per_page)
+        end
+      end
+
+      class ListSkills < BaseTool
+        tool_name "list_skills"
+        description "Skills dictionary with the number of open vacancies mentioning each; gives the slugs for list_vacancies' skill filter."
+        input_schema(properties: {})
+
+        def self.call(server_context:)
+          counts = VacancySkill.where(vacancy_id: VacancyPosting.active.where.not(source: :manual).select(:vacancy_id)).group(:skill_id).count
+          ok(::Skill.order(:category, :name).map { |skill| Aggregator::API::Entities::Skill.represent(skill, vacancies_count: counts.fetch(skill.id, 0)) })
+        end
+      end
+
+      class MarkVacanciesSeen < BaseTool
+        tool_name "mark_vacancies_seen"
+        description "Stop counting the current feed as new (after the user has looked through it)."
+        input_schema(properties: {})
+
+        def self.call(server_context:)
+          user(server_context).update!(vacancies_seen_at: Time.current)
+          ok(seen_at: user(server_context).vacancies_seen_at)
+        end
+      end
+
+      ALL = [ RecordApplication, AddApplicationEvent, ListApplications, GetApplication, RecordOutreach, ChangeOutreachStatus, ListOutreaches,
+              Digest, Funnel, InterviewPrompt, ListVacancies, ListSkills, MarkVacanciesSeen ].freeze
     end
   end
 end

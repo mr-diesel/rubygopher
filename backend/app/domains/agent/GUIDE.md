@@ -32,6 +32,16 @@ rotated: ask the user for the new one. The token cannot manage itself.
   `GET /api/v1/outreaches` list everything else. Find an application's `id` there
   before posting events to it.
 
+## Vacancy feed
+
+- "Any new Ruby vacancies?", "remote Go jobs mentioning Kafka" → `GET /api/v1/vacancies`
+  with filters `language` (`ruby`/`go`), `work_mode` (`remote`/`hybrid`/`onsite`),
+  `source`, `skill` (a slug from `GET /api/v1/skills`), `only_new=true`, `q`, `page`.
+  Filters combine with AND. Each vacancy has `postings` with the board links, `skills`,
+  `new` and `application_id`. Summarise titles, companies and salaries; link the
+  postings. "I applied to that one" → `POST /api/v1/applications` with the posting url.
+- "I've seen them" → `POST /api/v1/digest/vacancies_seen`.
+
 ## Mock interview
 
 - "Interview me for <company>", "let's practice for the Acme interview" → find the

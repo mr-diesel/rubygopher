@@ -26,7 +26,7 @@ RSpec.describe "MCP endpoint", type: :request do
     expect(init.dig("result", "instructions")).to include("POST /api/v1/applications")
 
     tools = rpc("tools/list").dig("result", "tools").map { |t| t["name"] }
-    expect(tools).to include("record_application", "add_application_event", "list_applications", "digest", "funnel", "interview_prompt")
+    expect(tools).to include("record_application", "add_application_event", "list_applications", "digest", "funnel", "interview_prompt", "list_vacancies", "list_skills", "mark_vacancies_seen")
   end
 
   it "serves the mock interview as an MCP prompt" do

@@ -49,4 +49,23 @@ RSpec.describe Agent::Mcp::Tools do
     foreign = described_class::InterviewPrompt.call(application_id: create(:job_application).id, server_context: context)
     expect(foreign.error?).to be(true)
   end
+
+  it "lists the vacancy feed with the skill filter, the dictionary, and marks the feed seen" do
+    user.update!(vacancies_seen_at: 1.day.ago)
+    kafka = create(:skill, name: "Kafka", slug: "kafka", category: :tool)
+    tagged = create(:vacancy, title: "Go with Kafka", language: :go)
+    create(:vacancy_posting, vacancy: tagged, source: :getmatch, url: "https://getmatch.ru/vacancies/1")
+    create(:vacancy_skill, vacancy: tagged, skill: kafka)
+    create(:vacancy_posting, vacancy: create(:vacancy, title: "Plain Ruby"))
+
+    feed = text(described_class::ListVacancies.call(language: "go", skill: "kafka", server_context: context))
+    expect(feed["total"]).to eq(1)
+    expect(feed["vacancies"].first).to include("title" => "Go with Kafka", "new" => true)
+    expect(feed["vacancies"].first["postings"].first["url"]).to eq("https://getmatch.ru/vacancies/1")
+
+    expect(text(described_class::ListSkills.call(server_context: context))).to eq([ { "slug" => "kafka", "name" => "Kafka", "category" => "tool", "vacancies_count" => 1 } ])
+
+    described_class::MarkVacanciesSeen.call(server_context: context)
+    expect(text(described_class::ListVacancies.call(only_new: true, server_context: context))["total"]).to eq(0)
+  end
 end
