@@ -11,6 +11,8 @@ RubyGopher is a job-search / interview-prep tool. A single Rails 8.1 backend ser
 
 Backend is `backend/` (Rails 8.1, Ruby 4.0.7), frontend is `frontend/` (React 19 + Vite 8), and `services/` holds Go microservices (`sandboxd`, `fetcher`). They are separate apps deployed together via `docker-compose.yml`.
 
+`README.md` is the reader-facing entry (features, data-flow diagram, five files to read, run/test/deploy), `docs/decisions.md` holds the architecture decision records (context, decision, consequences, rejected alternatives), `.env.example` lists the optional compose variables. Keep all three in step with changes, the same way as this file.
+
 ## Running the stack
 
 Everything runs through Docker Compose (services: `web` Rails :3000, `jobs` Sidekiq, `karafka` Kafka consumers, `css` dartsass watch, `frontend` Vite :5173, `db` Postgres 18 :5432, `redis` Redis 8, `fetcher` Go job-board collector, `notifier` Go Telegram notifier, `kafka` single-node KRaft (kafka:9092 inside, localhost:29092 from the host), and on an internal network `sandbox` Go sandboxd + `sandbox_db` throwaway Postgres + `sandbox_seed` one-shot that rebuilds it):

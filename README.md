@@ -1,120 +1,130 @@
 # RubyGopher
 
 [![pipeline status](https://gitlab.com/mr-diesel/rubygopher/badges/main/pipeline.svg)](https://gitlab.com/mr-diesel/rubygopher/-/pipelines)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A job-search workbench for Ruby and Go developers, built as a public portfolio project.
-Rails backend, React portal, Go microservices, everything in Docker.
+A job-search workbench for Ruby and Go developers: it collects vacancies from four job boards, tracks every application and its history, reminds you to follow up, and hands any chat assistant a prompt to interview you for a specific vacancy.
 
-The point of the repository is to show production-grade engineering on a small codebase:
-domain-driven Rails with dry-rb, a Grape API with two authentication realms, an isolated
-code sandbox written in Go, SQL-first schema management, and a real test suite.
+It is also a portfolio project. The codebase is meant to be read: Rails with dry-rb operations, a Grape API with three kinds of credentials, Kafka between a Rails app and three Go services, a sandbox that runs untrusted code, and a test suite that never touches the network.
 
-## What it does
+<!-- screenshots: docs/screenshots/{tracker,vacancies,console}.png -->
 
-| Part | Status | Summary |
-|---|---|---|
-| Interview Helper | done | Personal cheat-sheet library: questions grouped by category, rich answers (TipTap documents with syntax-highlighted code blocks), per-user ordering and hiding of shared defaults, admin panel for the default library |
-| Live console | done | Run snippets from the browser: plain Ruby, Ruby with the Rails app and models loaded, or a Go program (compiled and run, stdlib only). Everything executes in **sandboxd**, a Go service inside a locked-down container, against a throwaway database with synthetic data. **Share** turns the editor into a live session: anyone with the link edits and runs the same snippet over ActionCable (last write wins), with a participant count and everyone's carets; sessions expire a week after the last edit |
-| Application tracker | in progress | Companies, vacancies, applications and their event history. API: record an application from a job-board link alone (hh.ru vacancies are fetched from the public API on the spot) or from company + title, one application per vacancy, append status changes / notes / follow-ups, list and filter; record cold outreach to a company and track its status history; a digest of due follow-ups and new vacancies in the portal header; Telegram notifications for every tracker event and for follow-ups that come due (sidekiq-cron → outbox → Go notifier; link the bot from the settings panel); the **Tracker** tab in the portal lists applications and outreach, records an application from a pasted link, and keeps the history with status changes, notes and follow-up reminders. An external AI assistant can keep the journal for you through a universal interface: a personal `rg_` token from the settings panel, an MCP endpoint (`/mcp/<token>`, the open protocol browser assistants such as claude.ai and ChatGPT use for custom connectors) with the tracker and the vacancy feed as tools, plus an OpenAPI 3.1 schema generated from the Grape routes and a plain-text guide for anything that speaks HTTP. A **Funnel** view shows how many applications reached each stage (from the event history, so a rejected-after-screening still counts for screening), stage-to-stage conversion, reply rate and median time to the first reply. |
-| Vacancy aggregator | in progress | Ruby/Go postings from hh.ru, getmatch and Habr Career, deduplicated into canonical vacancies. A Go **fetcher** polls hh.ru, Habr Career, getmatch.ru and hirify.me (adapters behind one `Source` interface, run concurrently) and publishes `vacancies.raw`; a Karafka consumer turns each message into company + vacancy + posting, idempotently. The **Vacancies** tab shows the feed with filters, what is new since you last looked, every board a vacancy was seen on, and an "I applied" button that records the application. Postings no board has shown for a week are closed nightly and drop out of the feed. **Skills** are extracted without an LLM: a seeded dictionary (names + aliases, whole-word matching, case-sensitive for short names like Go) is run over the title, description and the boards' own tags; the feed filters by skill and shows the tags as clickable chips. Next: matching against the user's own skills |
-| Mock interviews | in progress | No LLM keys in the backend: the app writes the **prompt**, any chat assistant runs the interview. `GET /api/v1/interview/prompt?application_id=` assembles the vacancy (title, description, extracted skills), the candidate's résumé from the profile, the skills the vacancy wants that the résumé does not mention, the application's history so far and the rules of the interview (one question at a time, stages, a verdict with weak topics at the end). The application card has a **Mock interview prompt** button to copy it; assistants connected over MCP get it as the `mock_interview` prompt or the `interview_prompt` tool and can save the verdict back as a note. Next: a general prompt from the interview question library |
+## Features
 
-## Architecture
+**Application tracker.** Paste a vacancy link and the application is recorded with the company and title resolved from the board. Every status change, note, interview and follow-up is an event in its history; cold outreach to companies is tracked the same way. A header badge and Telegram remind you of follow-ups that are due; a funnel view shows how many applications reached each stage, conversion, reply rate and median time to the first reply.
+
+**Vacancy aggregator.** A Go fetcher polls hh.ru, Habr Career, getmatch.ru and hirify.me and publishes raw postings to Kafka; a Karafka consumer merges postings from different boards into one vacancy. Skills are extracted with a dictionary, no LLM. The feed filters by language, work mode, source, skill and novelty, shows every board a vacancy was seen on, and records an application in one click.
+
+**Mock interviews.** No LLM keys in the backend: for an application it writes a prompt with the vacancy and its skills, your résumé, the gap between the two, the application's history and the rules of the interview (one question at a time, a verdict with weak topics at the end). Copy it into any chat, or let an assistant connected over MCP fetch it and save the verdict back as a note.
+
+**AI assistants as a client.** A personal token turns any browser assistant into a tracker client: claude.ai, ChatGPT and other MCP clients connect to `/mcp/<token>` and get the tracker, the feed and the interview prompt as tools; anything that speaks HTTP gets an OpenAPI 3.1 schema and a guide. "I applied to this link", "any new remote Go jobs with Kafka", "interview me for the Acme position" each map to one call.
+
+**Interview Helper and live console.** A personal cheat-sheet of questions with rich answers, and a browser console that runs Ruby, Ruby with the app loaded, or a Go program inside a locked-down sandbox against a throwaway database. Share the link and everyone edits and runs the same snippet live.
+
+## How it works
+
+```mermaid
+flowchart LR
+  boards[hh.ru · Habr · getmatch · hirify] --> fetcher[fetcher · Go]
+  fetcher -- vacancies.raw --> kafka[(Kafka)]
+  kafka -- vacancies.raw --> karafka[Karafka consumers]
+  karafka --> db[(Postgres)]
+  spa[React portal] --> api[Rails · Grape API + MCP]
+  assistant[Browser assistant] --> api
+  api --> db
+  api -- outbox --> sidekiq[Sidekiq]
+  sidekiq -- tracker.events --> kafka
+  kafka -- tracker.events --> notifier[notifier · Go]
+  notifier --> tg[Telegram]
+  tg -- /start code --> notifier
+  notifier -- telegram.links --> kafka
+  api -. console .-> sandboxd[sandboxd · Go]
+```
 
 ```
-frontend/   React 19 + Vite SPA, JWT auth, talks to /api/v1
-backend/    Rails 8.1 (Ruby 4.0)
-  app/domains/<name>/      business logic by domain: api/ (Grape), operations/ (Dry::Operation), contracts/ (dry-validation)
-  app/controllers/admin_area/   server-rendered admin panel (Devise session)
-  app/models/              ActiveRecord models, shared by all domains
-  db/structure.sql         schema source of truth (Postgres-specific DDL preserved)
+backend/    Rails 8.1 on Ruby 4.0
+  app/domains/<name>/   one directory per domain: api/ (Grape), operations/ (Dry::Operation), contracts/, queries/, consumers/, jobs/
+  app/domains/agent/    OpenAPI generator, agent guide, MCP server (tools + prompts)
+  app/models/           ActiveRecord models shared by the domains
+  db/structure.sql      schema source of truth, Postgres DDL preserved
+frontend/   React 19 + Vite SPA (JWT), four tabs: Tracker, Vacancies, Interview Helper, Live console
 services/
-  sandboxd/   Go: supervises untrusted Ruby snippets (timeout, process-group kill, output cap, concurrency limit)
-  fetcher/    Go: job-board adapters (hh.ru API, Habr Career HTML, getmatch.ru API, hirify.me API) → Kafka producer
-  notifier/   Go: Kafka consumer group over tracker.events → Telegram; relays "/start <code>" back to Rails
+  fetcher/    Go: job-board adapters behind one Source interface → Kafka
+  notifier/   Go: tracker.events → Telegram, and /start codes back to Rails
+  sandboxd/   Go: runs console snippets with timeouts, process-group kills, output caps and a concurrency limit
+deploy/k8s/ kustomize base + minikube overlay
 ```
 
-Messaging: Kafka (single-node KRaft) carries events between services. Rails produces tracker events through a transactional outbox and consumes raw vacancies with Karafka; Sidekiq stays for in-app background jobs.
+Rails writes domain events into an outbox table in the same transaction as the change; a Sidekiq relay publishes them to Kafka. The Go notifier is stateless: every event already carries the recipient's chat id. Sidekiq also runs the periodic work (follow-up reminders, outbox sweep, skill extraction, closing stale postings) through sidekiq-cron.
 
-Decisions worth a look:
+## Five things worth reading
 
-- **Operations, not fat controllers.** Multi-step writes are `Dry::Operation` subclasses with a dry-validation contract; Grape endpoints only map results to HTTP. See `backend/app/domains/tracker/operations/record_application.rb`: validate, find-or-create company and vacancy, refuse duplicates, create the application and its first event, all in one transaction.
-- **Two auth realms that never cross, three credentials.** Admins use a Devise session for the Slim admin panel; portal users get a JWT from the Grape API with JTI revocation on logout; assistants use a personal `rg_` token, encrypted at rest with Active Record Encryption (deterministic, so it is still a lookup key). One `Identity::Authenticate` serves Grape and ActionCable, and token management requires a portal session, so a leaked token cannot lock its owner out.
-- **Sandboxed code execution.** The `sandbox` compose service has no route out of its internal network, a read-only filesystem, no capabilities, CPU/memory/pid limits and no secrets: the app is mounted read-only with the master key blanked and credentials pointed at nothing. The Rails context talks to `sandbox_db`, a throwaway Postgres rebuilt on every start from `db/structure.sql` and seeded with invented data (`db/sandbox_seed.rb`), through a role that Postgres itself restricts to `SELECT` with a statement timeout. No real data ever reaches the sandbox. The Go supervisor enforces a shared token, a concurrency cap, the timeout (whole process group) and reports OOM kills distinctly; the API adds a per-user token-bucket rate limit (atomic Lua script in Redis) and a snippet size limit. See `services/sandboxd` and `backend/app/domains/playground`.
-- **SQL schema dump.** `schema_format = :sql`, so partial indexes and FK rules survive round trips.
-- **Transactional outbox for domain events.** Every tracker write appends an `outbox_events` row in the same transaction (`Tracker::Events`), and a Sidekiq relay (`Outbox::Jobs::PublishJob`, `FOR UPDATE SKIP LOCKED`) publishes it to `tracker.events` keyed by user. At-least-once delivery with an `event_id` for consumers to dedupe; a crash between the write and the publish can delay an event, never lose it.
-- **Unreliable external APIs, contained.** `Aggregator::Clients::Hh` has explicit timeouts and typed errors; the operation turns them into a 503 without touching the database, and specs stub the HTTP with WebMock.
-- **Stateless notifier, event-driven linking.** The Go notifier never queries the app: every event already carries the user's Telegram chat id. Linking a chat is itself a Kafka round trip: the bot forwards `/start <code>` to `telegram.links`, a Karafka consumer ties the code to the user, and the resulting `user.telegram_linked` event flows back out through the outbox to confirm in the chat.
-- **Idempotent ingestion.** `Aggregator::Operations::IngestPosting` consumes `vacancies.raw`: a replayed message only refreshes `last_seen_at`, postings from different boards for the same company and title merge into one vacancy, invalid payloads are skipped and logged, broker-level retries end in a dead-letter topic.
-- **Shared sessions over ActionCable.** `?session=<token>` joins a `ConsoleSession`; the channel relays edits and run results to every subscriber, the JWT authenticates the WebSocket, and the same `Identity::Authenticate` serves both Grape and ActionCable.
-- **Tests that do not touch the network.** WebMock stubs sandboxd; the Go supervisor is tested with `sh` instead of Ruby so the tests also run inside the image build.
+| File | Why |
+|---|---|
+| [`record_application.rb`](backend/app/domains/tracker/operations/record_application.rb) | A `Dry::Operation`: validate, resolve the posting from a link (live hh.ru fetch with typed errors → 503, never a half-written row), find-or-create company and vacancy, refuse duplicates, write the application and its first event in one transaction |
+| [`publish_job.rb`](backend/app/domains/outbox/jobs/publish_job.rb) | The transactional outbox relay: `FOR UPDATE SKIP LOCKED`, at-least-once delivery with an `event_id` for consumers, a crash can delay an event but never lose it |
+| [`skill_matcher.rb`](backend/app/domains/aggregator/skill_matcher.rb) | Dictionary skill extraction: whole-word matching that survives "C++", "Node.js" and Cyrillic neighbours, case-sensitive for two-letter names so "go to the office" is not Go |
+| [`runner.go`](services/sandboxd/internal/sandbox/runner.go) | The sandbox supervisor: per-context commands, boot allowance on top of the timeout, whole-process-group kill, output cap at write time, OOM kills reported distinctly |
+| [`tools.rb`](backend/app/domains/agent/mcp/tools.rb) | The MCP tools: thin wrappers over the same operations and entities the REST API uses, so what one client records the other sees |
 
-## Let an AI assistant keep the journal
+More decisions, with the alternatives that lost, in [docs/decisions.md](docs/decisions.md).
 
-1. In the portal open ⚙ → *API token for assistants* → **Create token**. The panel shows two things: the token and an MCP URL `https://<host>/mcp/<token>`.
-2. **Any browser assistant with custom connectors** (claude.ai: Settings → Connectors → Add custom connector; ChatGPT: Settings → Connectors): paste the MCP URL. The assistant discovers the tools (`record_application`, `add_application_event`, `list_applications`, `record_outreach`, `digest`, `funnel`, …) and the guide by itself; no model-specific setup.
-3. **Anything that speaks plain HTTP**: `http://<host>:3000/api/v1/openapi.json` (OpenAPI 3.1, generated from the Grape routes) and `http://<host>:3000/api/v1/agent/guide`, with the token as a bearer credential.
+## Run it
 
-Both transports call the same operations, so what one assistant records the other sees. The token cannot rotate or reveal itself; rotate it from the portal if it leaks (the MCP URL changes with it).
-
-Locally the portal is on `localhost`, so a cloud assistant needs a tunnel: run `cloudflared tunnel --url http://localhost:3000` (or ngrok), put the hostname it prints into `.env` as `PUBLIC_HOST=...`, restart `web`, and use `https://<that host>/mcp/<token>` as the connector URL.
-
-## Stack
-
-Ruby 4.0 · Rails 8.1 · PostgreSQL 18 · Redis 8 · Sidekiq 8 + sidekiq-cron · Kafka 4 + Karafka 2.6 · Grape 4 · Devise 5 + devise-jwt · dry-operation / dry-validation / dry-monads · RSpec + FactoryBot + WebMock · React 19 · Vite 8 · TipTap 3 · CodeMirror 6 · @dnd-kit · Go 1.27
-
-## Running locally
+Requirements: Docker with Compose, about 6 GB of RAM for the stack (Postgres, Redis, Kafka, two Rails processes, three Go services, the sandbox and its own Postgres).
 
 ```bash
-docker compose up
+docker compose up        # first run installs gems and npm packages: a few minutes
 ```
 
-- Portal: http://localhost:5173
-- Kafka from the host: localhost:29092 (topics are declared in `backend/karafka.rb` and created by the `karafka` service on start)
-- API: http://localhost:3000/api/v1
-- Admin panel: http://localhost:3000/admin
+| URL | What |
+|---|---|
+| http://localhost:5173 | portal |
+| http://localhost:3000/api/v1 | API (`/openapi.json`, `/agent/guide`) |
+| http://localhost:3000/admin | admin panel for the default question library |
+| localhost:29092 | Kafka from the host |
 
-First run creates the database. Create an admin and sign up a portal user:
+Sign up a portal user and, if you want the admin panel, an admin:
 
 ```bash
-docker compose exec web bin/rails runner 'Admin.create!(email: "admin@example.com", password: "password123")'
 curl -X POST localhost:3000/api/v1/signup -H 'Content-Type: application/json' \
      -d '{"email":"me@example.com","password":"password123"}'
+docker compose exec web bin/rails runner 'Admin.create!(email: "admin@example.com", password: "password123")'
 ```
 
-The console's Rails context reads from `sandbox_db`, which is rebuilt with synthetic data on every `docker compose up`. To rebuild it by hand:
+Optional settings go into `.env` (see [`.env.example`](.env.example)):
+
+| Variable | Purpose |
+|---|---|
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME` | a bot from BotFather; without the token the notifier logs messages instead of sending |
+| `HH_TOKEN` | hh.ru application token, in case the public API refuses anonymous requests |
+| `PUBLIC_HOST` | hostname of a tunnel (`cloudflared tunnel --url http://localhost:3000`) so a cloud assistant can reach `/mcp` |
+| `FETCH_INTERVAL`, `FETCH_SOURCES`, `HIRIFY_REMOTE_TYPES` | fetcher cadence and sources |
+
+The console's Rails context reads `sandbox_db`, rebuilt with invented data on every `docker compose up` (`bin/sandbox-db-reset` by hand). The console is enabled in development only: `PLAYGROUND_CONSOLE=true` turns it on elsewhere, and only behind the sandbox.
+
+### Connect an assistant
+
+1. Portal → ⚙ → *API token for assistants* → **Create token**. The panel shows the token and the MCP URL.
+2. claude.ai (Settings → Connectors → Add custom connector), ChatGPT or any MCP client: paste `https://<host>/mcp/<token>`. The tools and the guide are discovered automatically.
+3. Plain HTTP: `/api/v1/openapi.json` and `/api/v1/agent/guide` with the token as a bearer credential.
+
+The token cannot rotate or reveal itself; regenerate it from the portal if it leaks, and the MCP URL changes with it.
+
+## Tests and CI
 
 ```bash
-bin/sandbox-db-reset
+docker compose run --rm web bin/ci       # rspec, rubocop, bundler-audit, importmap audit, brakeman
+cd services/fetcher && go test ./...     # same for sandboxd and notifier; also run inside the image builds
 ```
 
-The console is enabled in development only; set `PLAYGROUND_CONSOLE=true` to enable it elsewhere, and only behind the sandbox.
+Specs cover operations, queries, request specs, channels, jobs and Karafka consumers (no broker needed); external HTTP is stubbed, Go adapters run against httptest servers with recorded fixtures. GitLab CI runs all of it on every branch with Postgres and Redis service containers, then builds the five production images and pushes them to the registry from `main`. A fresh clone runs the suite without any secrets.
 
-## Tests and checks
+## Production
 
-```bash
-docker compose run --rm web bundle exec rspec     # backend specs
-docker compose run --rm web bin/ci                # rspec, rubocop, bundler-audit, importmap audit, brakeman
-cd services/sandboxd && go test ./...             # Go unit tests (also run during the image build)
-```
+Every deployable part has a multi-stage Dockerfile producing a non-root image: `backend/Dockerfile` (jemalloc, Thruster, precompiled assets; the same image runs Puma, Sidekiq and Karafka), `frontend/Dockerfile` (Vite build behind nginx, API origin baked in with `--build-arg VITE_API_BASE`), `services/*/Dockerfile` (static Go binaries).
 
-GitLab CI (`.gitlab-ci.yml`) runs the same three things on every branch and merge request: `bin/ci` against Postgres 18 and Redis 8 service containers, `gofmt` + `go vet` + `go test` for each Go service in parallel, and the Vite production build. The test environment uses fixed Active Record encryption keys, so no secrets are needed to run the suite anywhere.
-
-## Production images
-
-Every deployable part has a multi-stage Dockerfile that produces a small non-root image:
-
-| Image | Dockerfile | Notes |
-|---|---|---|
-| backend | `backend/Dockerfile` | Rails with jemalloc, Thruster in front of Puma, assets precompiled, `postgresql-client-18` for `db:prepare`. One image runs the web server, Sidekiq (`bundle exec sidekiq`) and Karafka (`bundle exec karafka server`). Needs `RAILS_MASTER_KEY`, `DB_HOST/DB_USERNAME/DB_PASSWORD/DB_NAME`, `REDIS_URL`, `KAFKA_BOOTSTRAP_SERVERS`, `FRONTEND_ORIGIN` (CORS + ActionCable), `SANDBOX_URL`/`SANDBOX_TOKEN` only if the console is enabled |
-| frontend | `frontend/Dockerfile` | Vite build served by nginx with the SPA fallback; the API origin is baked in with `--build-arg VITE_API_BASE=https://api.example.com/api/v1` |
-| sandboxd, fetcher, notifier | `services/*/Dockerfile` | Static Go binaries on alpine (sandboxd on ruby-slim plus the Go toolchain, since it runs user code); `go test` runs inside the build |
-
-The `build` stage of the pipeline builds all five with Docker-in-Docker on every branch and pushes them to the GitLab registry as `<registry>/<image>:<sha>` and `:latest` from `main` (set `VITE_API_BASE` as a CI variable for the frontend).
-
-## Deploying to Kubernetes
-
-`deploy/k8s/base` is a kustomize base for one cluster: Postgres, Redis and a single-node KRaft Kafka as StatefulSets with persistent volumes, a `migrate` Job (`db:prepare db:seed` + `karafka topics migrate`) that runs before the Rails pods, Deployments for `web` (Thruster + Puma behind the Service, `/up` probes, 2 replicas, `SKIP_DB_PREPARE` so replicas never race on migrations), `jobs` (Sidekiq), `karafka`, `fetcher`, `notifier` and `frontend` (nginx, 2 replicas), and one Ingress with two hosts: the SPA and the API. Non-secret settings are a ConfigMap; secrets come from a `rubygopher-secrets` Secret you create from `deploy/k8s/secrets.example.yaml`. The console sandbox is not deployed: `PLAYGROUND_CONSOLE` stays off in production.
+`deploy/k8s/base` is a kustomize base: Postgres, Redis and a single-node Kafka as StatefulSets, a `migrate` Job that loads the schema, seeds the skills dictionary and declares the topics, Deployments for web, Sidekiq, Karafka, the Go services and the SPA, one Ingress with two hosts. Secrets come from `deploy/k8s/secrets.example.yaml`; the sandbox is not deployed.
 
 ```bash
 kubectl -n rubygopher delete job migrate --ignore-not-found   # a Job's template is immutable
@@ -122,7 +132,19 @@ kubectl apply -k deploy/k8s/base
 kubectl -n rubygopher wait --for=condition=complete job/migrate --timeout=5m
 ```
 
-`deploy/k8s/overlays/minikube` swaps in locally built images, test secrets and `*.local` hosts; the header of its `kustomization.yaml` lists the commands to run the whole stack on minikube.
+`deploy/k8s/overlays/minikube` runs the same stack on minikube with locally built images; the commands are in its `kustomization.yaml`.
+
+## Known limitations
+
+- hh.ru answers 451/403 outside Russia, so the hh adapter is written against the documented API and verified only with recorded responses.
+- Skill extraction is dictionary-based: it finds mentions, it does not tell "required" from "nice to have".
+- Kafka is a single KRaft node; the manifests are for one cluster, not for HA.
+- Inside the sandbox container the per-snippet memory limit is the container's cgroup, not a per-process rlimit (Ruby on slim images cannot use `RLIMIT_AS`).
+- Last write wins in shared console sessions; there is no merge.
+
+## Roadmap
+
+Match vacancies against the user's own skills; feed the Interview Helper library into the interview prompt; push the header digest over ActionCable instead of polling; HPA and network policies for the cluster.
 
 ## License
 
