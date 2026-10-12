@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import ApiTokenPanel from "./ApiTokenPanel";
 import TelegramLink from "./TelegramLink";
+import ResumePanel from "./ResumePanel";
 
 export default function SettingsPanel() {
   const [open, setOpen] = useState(false);
@@ -25,6 +26,10 @@ export default function SettingsPanel() {
           <section>
             <h4>Telegram notifications</h4>
             <TelegramLink />
+          </section>
+          <section>
+            <h4>Résumé</h4>
+            <ResumePanel />
           </section>
         </div>
       )}

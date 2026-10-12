@@ -602,6 +602,11 @@ body {
   font: inherit;
 }
 .settings-block .ghost.danger { border-color: var(--danger); color: var(--danger); }
+.settings-block .resume { width: 100%; box-sizing: border-box; resize: vertical; }
+
+.interview-prompt { margin: 0.75rem 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.interview-prompt .dim { margin: 0; }
+.interview-prompt__text { width: 100%; box-sizing: border-box; resize: vertical; font-size: 0.85rem; }
 
 /* Funnel: stat tiles plus one-series horizontal bars with direct labels */
 .funnel { max-width: 56rem; display: flex; flex-direction: column; gap: 1.25rem; }

@@ -32,6 +32,18 @@ rotated: ask the user for the new one. The token cannot manage itself.
   `GET /api/v1/outreaches` list everything else. Find an application's `id` there
   before posting events to it.
 
+## Mock interview
+
+- "Interview me for <company>", "let's practice for the Acme interview" → find the
+  application's `id`, then `GET /api/v1/interview/prompt?application_id=<id>` and
+  follow the `prompt` it returns: it describes the vacancy, the candidate's résumé,
+  the skills the vacancy wants that the résumé does not mention, and how to run the
+  interview. Without `application_id` the prompt targets the stack of all active
+  applications. Over MCP the same thing is the `mock_interview` prompt or the
+  `interview_prompt` tool.
+- "Here is my résumé" → `PATCH /api/v1/me` with `resume` (plain text or Markdown,
+  up to 20 000 characters); `GET /api/v1/me` shows what is stored.
+
 ## Rules
 
 - Never invent companies or dates. Ask when unsure.

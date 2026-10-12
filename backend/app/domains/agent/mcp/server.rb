@@ -10,6 +10,7 @@ module Agent
           version: "1",
           instructions: Agent::Guide.text,
           tools: Tools::ALL,
+          prompts: [ Prompts::MockInterview ],
           resources: [ GuideResource ],
           server_context: { user: user }
         )

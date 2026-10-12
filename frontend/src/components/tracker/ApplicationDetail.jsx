@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { addApplicationEvent } from "../../api/tracker";
+import InterviewPrompt from "./InterviewPrompt";
 import { APPLICATION_STATUSES, EVENT_TYPES, errorMessage, fmtDate, fmtDateTime, label, toIso } from "../../lib/tracker";
 
 const emptyEvent = { event_type: "status_changed", status: "", comment: "", occurred_at: "", next_follow_up_at: "" };
@@ -44,6 +45,8 @@ export default function ApplicationDetail({ application, onChanged }) {
         applied {fmtDate(application.applied_at)} · last activity {fmtDate(application.last_activity_at)}
         {application.next_follow_up_at && ` · follow up ${fmtDateTime(application.next_follow_up_at)}`}
       </p>
+
+      <InterviewPrompt applicationId={application.id} />
 
       <h4>History</h4>
       <ol className="timeline">

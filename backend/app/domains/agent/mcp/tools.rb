@@ -129,7 +129,21 @@ module Agent
         end
       end
 
-      ALL = [ RecordApplication, AddApplicationEvent, ListApplications, GetApplication, RecordOutreach, ChangeOutreachStatus, ListOutreaches, Digest, Funnel ].freeze
+      class InterviewPrompt < BaseTool
+        tool_name "interview_prompt"
+        description "Prompt for running a mock interview right here in the chat: the vacancy, the user's résumé and skills, the gaps and the application history, plus the rules of the interview. Fetch it, then follow it. Omit application_id for a general interview on the user's stack."
+        input_schema(properties: { application_id: { type: "integer" } })
+
+        def self.call(server_context:, application_id: nil)
+          application = application_id && user(server_context).job_applications.find_by(id: application_id)
+          return failed([ :not_found ]) if application_id && application.nil?
+
+          result = Interview::Queries::MockInterviewPrompt.new(user(server_context), application: application || nil).call
+          MCP::Tool::Response.new([ { type: "text", text: result.prompt } ])
+        end
+      end
+
+      ALL = [ RecordApplication, AddApplicationEvent, ListApplications, GetApplication, RecordOutreach, ChangeOutreachStatus, ListOutreaches, Digest, Funnel, InterviewPrompt ].freeze
     end
   end
 end

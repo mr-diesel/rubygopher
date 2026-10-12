@@ -627,7 +627,8 @@ CREATE TABLE public.users (
     telegram_link_code character varying,
     api_token character varying,
     api_token_generated_at timestamp(6) without time zone,
-    api_token_last_used_at timestamp(6) without time zone
+    api_token_last_used_at timestamp(6) without time zone,
+    resume text
 );
 
 
@@ -664,6 +665,13 @@ COMMENT ON COLUMN public.users.api_token IS 'Personal token for external AI assi
 --
 
 COMMENT ON COLUMN public.users.api_token_last_used_at IS 'Touched on every authenticated API call; a surprise here is the cue to rotate';
+
+
+--
+-- Name: COLUMN users.resume; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.users.resume IS 'Candidate''s résumé as pasted plain text or Markdown; feeds the mock-interview prompt';
 
 
 --
@@ -1524,6 +1532,7 @@ ALTER TABLE ONLY public.user_skills
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261012143205'),
 ('20261012131736'),
 ('20261009141411'),
 ('20261006142428'),

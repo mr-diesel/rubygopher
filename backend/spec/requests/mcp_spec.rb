@@ -26,7 +26,22 @@ RSpec.describe "MCP endpoint", type: :request do
     expect(init.dig("result", "instructions")).to include("POST /api/v1/applications")
 
     tools = rpc("tools/list").dig("result", "tools").map { |t| t["name"] }
-    expect(tools).to include("record_application", "add_application_event", "list_applications", "digest", "funnel")
+    expect(tools).to include("record_application", "add_application_event", "list_applications", "digest", "funnel", "interview_prompt")
+  end
+
+  it "serves the mock interview as an MCP prompt" do
+    application = create(:job_application, user: user)
+    user.update!(resume: "Ruby since 2021")
+
+    prompts = rpc("prompts/list").dig("result", "prompts").map { |p| p["name"] }
+    expect(prompts).to eq([ "mock_interview" ])
+
+    got = rpc("prompts/get", { name: "mock_interview", arguments: { application_id: application.id.to_s } })
+    expect(got.dig("result", "description")).to start_with("Mock interview: #{application.vacancy.title}")
+    expect(got.dig("result", "messages", 0, "content", "text")).to include("Ruby since 2021", "application_id #{application.id}")
+
+    missing = rpc("prompts/get", { name: "mock_interview", arguments: { application_id: "0" } })
+    expect(missing.dig("error", "code")).to eq(-32602)
   end
 
   it "records an application through a tool call and reads it back" do

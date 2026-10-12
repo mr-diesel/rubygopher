@@ -12,6 +12,7 @@ module Interview
       end
 
       mount Interview::API::Questions
+      mount Interview::API::Prompts
     end
   end
 end

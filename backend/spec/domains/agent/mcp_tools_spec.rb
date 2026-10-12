@@ -38,4 +38,15 @@ RSpec.describe Agent::Mcp::Tools do
     funnel = text(described_class::Funnel.call(since: 7.days.ago.iso8601, server_context: context))
     expect(funnel.dig("applications", "total")).to eq(1)
   end
+
+  it "returns the interview prompt as plain text and not_found for a foreign application" do
+    application = create(:job_application, user: user)
+
+    response = described_class::InterviewPrompt.call(application_id: application.id, server_context: context)
+    expect(response.error?).to be(false)
+    expect(response.content.first[:text]).to start_with("# Mock interview: #{application.vacancy.title}")
+
+    foreign = described_class::InterviewPrompt.call(application_id: create(:job_application).id, server_context: context)
+    expect(foreign.error?).to be(true)
+  end
 end
