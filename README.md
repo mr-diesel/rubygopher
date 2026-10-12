@@ -100,6 +100,18 @@ cd services/sandboxd && go test ./...             # Go unit tests (also run duri
 
 GitLab CI (`.gitlab-ci.yml`) runs the same three things on every branch and merge request: `bin/ci` against Postgres 18 and Redis 8 service containers, `gofmt` + `go vet` + `go test` for each Go service in parallel, and the Vite production build. The test environment uses fixed Active Record encryption keys, so no secrets are needed to run the suite anywhere.
 
+## Production images
+
+Every deployable part has a multi-stage Dockerfile that produces a small non-root image:
+
+| Image | Dockerfile | Notes |
+|---|---|---|
+| backend | `backend/Dockerfile` | Rails with jemalloc, Thruster in front of Puma, assets precompiled, `postgresql-client-18` for `db:prepare`. One image runs the web server, Sidekiq (`bundle exec sidekiq`) and Karafka (`bundle exec karafka server`). Needs `RAILS_MASTER_KEY`, `DB_HOST/DB_USERNAME/DB_PASSWORD/DB_NAME`, `REDIS_URL`, `KAFKA_BOOTSTRAP_SERVERS`, `FRONTEND_ORIGIN` (CORS + ActionCable), `SANDBOX_URL`/`SANDBOX_TOKEN` only if the console is enabled |
+| frontend | `frontend/Dockerfile` | Vite build served by nginx with the SPA fallback; the API origin is baked in with `--build-arg VITE_API_BASE=https://api.example.com/api/v1` |
+| sandboxd, fetcher, notifier | `services/*/Dockerfile` | Static Go binaries on alpine (sandboxd on ruby-slim plus the Go toolchain, since it runs user code); `go test` runs inside the build |
+
+The `build` stage of the pipeline builds all five with Docker-in-Docker on every branch and pushes them to the GitLab registry as `<registry>/<image>:<sha>` and `:latest` from `main` (set `VITE_API_BASE` as a CI variable for the frontend).
+
 ## License
 
 MIT, see [LICENSE](LICENSE).

@@ -78,6 +78,9 @@ Rails.application.configure do
   # Only use :id for inspections in production.
   config.active_record.attributes_for_inspect = [ :id ]
 
+  # The SPA is served from its own origin (see FRONTEND_ORIGIN in config/initializers/cors.rb).
+  config.action_cable.allowed_request_origins = [ ENV["FRONTEND_ORIGIN"] ].compact
+
   # Enable DNS rebinding protection and other `Host` header attacks.
   # config.hosts = [
   #   "example.com",     # Allow requests from example.com

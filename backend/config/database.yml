@@ -82,6 +82,4 @@ test:
 #
 production:
   <<: *default
-  database: rubygopher_production
-  username: rubygopher
-  password: <%= ENV["RUBYGOPHER_DATABASE_PASSWORD"] %>
+  database: <%= ENV.fetch("DB_NAME", "rubygopher_production") %>

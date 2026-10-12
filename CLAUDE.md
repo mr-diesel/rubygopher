@@ -37,6 +37,8 @@ Note: the dev image installs `postgresql-client-18` from PGDG because `db/struct
 
 GitLab CI (`.gitlab-ci.yml`, every branch and MR): `backend` runs `bundle install && bin/ci` (`bin/ci` boots Bundler before `bin/setup` could install anything) in `ruby:4.0.7-slim` with `postgres:18-alpine` and `redis:8-alpine` service containers (`DB_HOST=postgres`, `REDIS_URL`, `RAILS_ENV=test`, gems cached in `vendor/bundle`, `postgresql-client-18` from PGDG so `psql` can load `structure.sql`); `go` is a matrix over `services/{sandboxd,fetcher,notifier}` (`gofmt -l`, `go vet`, `go test`; sandboxd tests that need `ruby` on PATH skip themselves); `frontend` is `npm ci && npm run build`. `config/environments/test.rb` pins the Active Record encryption keys and Devise JWT uses `Rails.application.secret_key_base`, so the suite needs no `master.key`.
 
+Production images: `backend/Dockerfile` (Rails default multi-stage, `BUNDLE_WITHOUT=development:test`, PGDG `postgresql-client-18`, Thruster; `database.yml` production reads `DB_NAME` and the shared `DB_*` vars; `production.rb` takes ActionCable origins from `FRONTEND_ORIGIN`, the same variable `cors.rb` already honours), `frontend/Dockerfile` (`npm ci && npm run build` with `ARG VITE_API_BASE`, served by `nginx:1.29-alpine` with `frontend/nginx.conf`: SPA fallback, immutable `/assets/`), `services/*/Dockerfile` (unchanged, already production-grade). The CI `images` job (`docker:28` + dind, matrix of five) builds each on every branch and pushes `:$CI_COMMIT_SHA` + `:latest` to `$CI_REGISTRY_IMAGE/<image>` from the default branch only. `docker-compose.yml` stays the dev stack and still uses `Dockerfile.dev`.
+
 ## Backend architecture
 
 ### Domain layout (`app/domains/`)
