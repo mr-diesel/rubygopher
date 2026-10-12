@@ -20,6 +20,25 @@ RSpec.describe Aggregator::Operations::IngestPosting do
     expect(posting.vacancy.company).to have_attributes(name: "Acme", source: "hh", external_id: "hh-c-9")
   end
 
+  it "stores the board's tags and extracts skills for a new vacancy" do
+    rails = create(:skill, name: "Ruby on Rails", slug: "rails", aliases: [ "Rails" ])
+    sidekiq = create(:skill, name: "Sidekiq", slug: "sidekiq")
+
+    posting = described_class.new.call(input.merge(description: "Rails monolith", skills: [ "Sidekiq" ])).value!
+
+    expect(posting.tags).to eq([ "Sidekiq" ])
+    expect(posting.vacancy.skills).to contain_exactly(rails, sidekiq)
+  end
+
+  it "re-extracts skills when a replayed posting brings new tags" do
+    sidekiq = create(:skill, name: "Sidekiq", slug: "sidekiq")
+    described_class.new.call(input).value!
+
+    described_class.new.call(input.merge(skills: [ "Sidekiq" ]))
+
+    expect(Vacancy.sole.skills).to include(sidekiq)
+  end
+
   it "is idempotent: a replayed posting only refreshes last_seen_at" do
     posting = described_class.new.call(input).value!
     posting.update!(last_seen_at: 2.days.ago, active: false)

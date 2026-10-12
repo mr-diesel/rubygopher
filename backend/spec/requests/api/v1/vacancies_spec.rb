@@ -30,6 +30,44 @@ RSpec.describe "API V1 Vacancies feed", type: :request do
     expect(item["postings"].map { |p| p["source"] }).to contain_exactly("hh", "getmatch")
   end
 
+  it "filters by skill and exposes each vacancy's skills" do
+    kafka = create(:skill, name: "Kafka", slug: "kafka", category: :tool)
+    tagged = create(:vacancy)
+    create(:vacancy_posting, vacancy: tagged)
+    create(:vacancy_skill, vacancy: tagged, skill: kafka)
+    create(:vacancy_posting, vacancy: create(:vacancy, title: "Untagged"))
+
+    get "/api/v1/vacancies", params: { skill: "kafka" }, headers: auth_headers
+
+    expect(response.parsed_body["total"]).to eq(1)
+    expect(response.parsed_body["vacancies"].first["skills"]).to eq([ { "slug" => "kafka", "name" => "Kafka", "category" => "tool" } ])
+  end
+
+  describe "GET /api/v1/skills" do
+    it "requires authentication" do
+      get "/api/v1/skills"
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "lists the dictionary with open vacancy counts" do
+      kafka = create(:skill, name: "Kafka", slug: "kafka", category: :tool)
+      create(:skill, name: "Redis", slug: "redis", category: :database)
+      tagged = create(:vacancy)
+      create(:vacancy_posting, vacancy: tagged)
+      create(:vacancy_skill, vacancy: tagged, skill: kafka)
+      create(:vacancy_skill, vacancy: create(:vacancy), skill: kafka)
+
+      get "/api/v1/skills", headers: auth_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body).to contain_exactly(
+        { "slug" => "kafka", "name" => "Kafka", "category" => "tool", "vacancies_count" => 1 },
+        { "slug" => "redis", "name" => "Redis", "category" => "database", "vacancies_count" => 0 }
+      )
+    end
+  end
+
   it "rejects unknown filter values" do
     get "/api/v1/vacancies", params: { source: "manual" }, headers: auth_headers
 

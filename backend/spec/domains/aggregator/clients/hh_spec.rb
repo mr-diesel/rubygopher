@@ -8,7 +8,7 @@ RSpec.describe Aggregator::Clients::Hh do
       id: 123, name: "Senior Ruby Developer", alternate_url: "https://hh.ru/vacancy/123",
       employer: { id: 9, name: "Acme", alternate_url: "https://hh.ru/employer/9" },
       area: { name: "Москва" }, schedule: { id: "remote" }, salary: { from: 300_000, to: nil, currency: "RUR" },
-      description: "<p>Rails</p>", published_at: "2026-10-01T10:00:00+0300"
+      description: "<p>Rails</p>", published_at: "2026-10-01T10:00:00+0300", key_skills: [ { name: "Ruby" }, { name: "Sidekiq" } ]
     }
   end
 
@@ -18,7 +18,7 @@ RSpec.describe Aggregator::Clients::Hh do
     expect(client.fetch_vacancy(123)).to include(
       source: "hh", external_id: "123", title: "Senior Ruby Developer", url: "https://hh.ru/vacancy/123",
       company: { name: "Acme", external_id: "9", website: "https://hh.ru/employer/9" },
-      location: "Москва", work_mode: "remote", salary_min: 300_000, currency: "RUR"
+      location: "Москва", work_mode: "remote", salary_min: 300_000, currency: "RUR", skills: [ "Ruby", "Sidekiq" ]
     )
   end
 

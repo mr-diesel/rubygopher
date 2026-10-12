@@ -741,8 +741,16 @@ CREATE TABLE public.vacancy_postings (
     last_seen_at timestamp(6) without time zone NOT NULL,
     active boolean DEFAULT true NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    tags jsonb DEFAULT '[]'::jsonb NOT NULL
 );
+
+
+--
+-- Name: COLUMN vacancy_postings.tags; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.vacancy_postings.tags IS 'Skill tags exactly as the job board listed them (e.g. ["Ruby on Rails", "PostgreSQL"]); input for dictionary skill extraction';
 
 
 --
@@ -1516,6 +1524,7 @@ ALTER TABLE ONLY public.user_skills
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261012131736'),
 ('20261009141411'),
 ('20261006142428'),
 ('20261006134735'),

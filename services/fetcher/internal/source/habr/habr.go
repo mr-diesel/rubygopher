@@ -107,8 +107,8 @@ func Parse(html []byte, baseURL, query string) ([]posting.Posting, error) {
 				p.PublishedAt = &t
 			}
 		}
-		skills := card.Find(".vacancy-card__skills .basic-chip__text").Map(func(_ int, s *goquery.Selection) string { return s.Text() })
-		if source.Relevant(query, append(skills, p.Title)...) {
+		p.Skills = card.Find(".vacancy-card__skills .basic-chip__text").Map(func(_ int, s *goquery.Selection) string { return strings.TrimSpace(s.Text()) })
+		if source.Relevant(query, append(p.Skills, p.Title)...) {
 			postings = append(postings, p)
 		}
 	})

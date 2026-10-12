@@ -49,4 +49,7 @@ func TestFetchConvertsItems(t *testing.T) {
 	if second := postings[1]; second.Company.Name != "OpsLevel" || second.SalaryMin != 0 {
 		t.Errorf("second: %+v", second)
 	}
+	if len(first.Skills) == 0 || first.Skills[0] != "ruby" {
+		t.Errorf("skills should come from main_stack, got %v", first.Skills)
+	}
 }

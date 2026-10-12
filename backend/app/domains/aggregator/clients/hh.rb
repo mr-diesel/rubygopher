@@ -51,6 +51,7 @@ module Aggregator
           salary_max: salary["to"],
           currency: salary["currency"],
           description: data["description"],
+          skills: Array(data["key_skills"]).filter_map { |skill| skill["name"] },
           published_at: data["published_at"],
           raw: data
         }.compact

@@ -680,5 +680,19 @@ body {
 .feed-card__head h3 { margin: 0; font-size: 1.05rem; }
 .feed-card__meta { margin: 0; }
 .feed-card__actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.feed-card__skills { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+
+.chip {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.75rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.chip:hover { color: var(--text); border-color: var(--text); }
+.chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 .feed-pager { display: flex; gap: 0.75rem; align-items: center; justify-content: center; }
 .digest-row__buttons { display: flex; gap: 0.4rem; }

@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { listVacancies } from "../api/vacancies";
+import { listSkills } from "../api/skills";
 import { createApplication } from "../api/tracker";
 import { markVacanciesSeen } from "../api/digest";
 import { errorMessage, fmtDate, label } from "../lib/tracker";
 
 const SOURCES = ["hh", "habr_career", "getmatch", "hirify"];
-const EMPTY = { language: "", work_mode: "", source: "", only_new: false, q: "" };
+const EMPTY = { language: "", work_mode: "", source: "", skill: "", only_new: false, q: "" };
 
 const salary = (v) => {
   if (!v.salary_min && !v.salary_max) return null;
@@ -18,12 +19,14 @@ export default function Vacancies({ onDigestChange }) {
   const [filters, setFilters] = useState(EMPTY);
   const [page, setPage] = useState(1);
   const [feed, setFeed] = useState(null);
+  const [skills, setSkills] = useState([]);
   const [error, setError] = useState(null);
 
-  const set = (field) => (e) => {
-    setFilters((f) => ({ ...f, [field]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
+  const setFilter = (field, value) => {
+    setFilters((f) => ({ ...f, [field]: value }));
     setPage(1);
   };
+  const set = (field) => (e) => setFilter(field, e.target.type === "checkbox" ? e.target.checked : e.target.value);
 
   const load = useCallback(
     () => listVacancies({ ...filters, page }).then(setFeed).catch((e) => setError(errorMessage(e))),
@@ -33,6 +36,10 @@ export default function Vacancies({ onDigestChange }) {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    listSkills().then(setSkills).catch(() => setSkills([]));
+  }, []);
 
   const apply = async (vacancy) => {
     setError(null);
@@ -70,6 +77,10 @@ export default function Vacancies({ onDigestChange }) {
           <option value="">any source</option>
           {SOURCES.map((s) => <option key={s} value={s}>{label(s)}</option>)}
         </select>
+        <select value={filters.skill} onChange={set("skill")}>
+          <option value="">any skill</option>
+          {skills.map((s) => <option key={s.slug} value={s.slug}>{s.name} ({s.vacancies_count})</option>)}
+        </select>
         <label className="feed-check"><input type="checkbox" checked={filters.only_new} onChange={set("only_new")} /> only new</label>
         <button className="ghost" onClick={seen} title="Everything currently in the feed stops counting as new">Mark all seen</button>
         {feed && <span className="dim">{feed.total} vacancies</span>}
@@ -94,6 +105,15 @@ export default function Vacancies({ onDigestChange }) {
               {salary(v) && <span> · {salary(v)}</span>}
               {v.published_at && <span className="dim"> · {fmtDate(v.published_at)}</span>}
             </p>
+            {v.skills.length > 0 && (
+              <div className="feed-card__skills">
+                {v.skills.map((s) => (
+                  <button key={s.slug} className={`chip${filters.skill === s.slug ? " active" : ""}`} onClick={() => setFilter("skill", filters.skill === s.slug ? "" : s.slug)}>
+                    {s.name}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="feed-card__actions">
               {v.postings.map((p) => (
                 <a key={p.url} href={p.url} target="_blank" rel="noreferrer" className="ghost">{label(p.source)} ↗</a>

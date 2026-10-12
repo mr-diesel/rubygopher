@@ -42,6 +42,9 @@ func TestParseFixture(t *testing.T) {
 	if first.WorkMode != "remote" || first.Language != "" || first.PublishedAt == nil {
 		t.Errorf("attributes: %+v", first)
 	}
+	if len(first.Skills) == 0 || first.Skills[0] != "Microsoft SQL" {
+		t.Errorf("skills should come from the card chips, got %v", first.Skills)
+	}
 }
 
 func TestParseSalary(t *testing.T) {

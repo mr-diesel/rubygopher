@@ -93,6 +93,7 @@ func (s *Source) convert(it item, query string) posting.Posting {
 		Language:    source.LanguageFor(query),
 		WorkMode:    workMode(it.WorkFormat),
 		Description: it.Tldr,
+		Skills:      it.MainStack,
 		Raw:         it,
 	}
 	if len(it.Regions) > 0 {

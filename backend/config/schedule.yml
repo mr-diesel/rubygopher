@@ -18,6 +18,12 @@ close_stale_postings:
   queue: low
   description: "Deactivate postings no board has shown for a week"
 
+extract_skills:
+  cron: "*/30 * * * *"
+  class: "Aggregator::Jobs::ExtractSkillsJob"
+  queue: low
+  description: "Tag vacancies that were never scanned for skills (or were reset after a dictionary change)"
+
 purge_console_sessions:
   cron: "30 4 * * *"
   class: "Playground::Jobs::PurgeConsoleSessionsJob"

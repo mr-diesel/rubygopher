@@ -43,6 +43,9 @@ func TestFetchConvertsActiveRelevantOffers(t *testing.T) {
 	if p.PublishedAt == nil || p.PublishedAt.UTC().Format("2006-01-02T15:04") != "2026-09-23T08:10" {
 		t.Errorf("published_at should be read as Moscow time: %v", p.PublishedAt)
 	}
+	if len(p.Skills) == 0 || p.Skills[0] != "Ruby" {
+		t.Errorf("skills should come from skills_objects, got %v", p.Skills)
+	}
 }
 
 func TestFetchMapsGoToTheGolangSpecialization(t *testing.T) {

@@ -16,4 +16,6 @@ class Vacancy < ApplicationRecord
   attr_accessor :new_for_user, :application_id
 
   scope :titled, ->(title) { where("lower(title) = ?", title.to_s.strip.downcase) }
+  scope :skills_pending, -> { where(skills_extracted_at: nil) }
+  scope :with_skill, ->(slug) { where(id: VacancySkill.joins(:skill).where(skills: { slug: slug }).select(:vacancy_id)) }
 end

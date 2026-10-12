@@ -9,6 +9,7 @@ module Aggregator
         expose :postings do |vacancy|
           vacancy.postings.map { |p| { source: p.source, url: p.url, active: p.active, last_seen_at: p.last_seen_at } }
         end
+        expose :skills, using: Skill
         expose(:new) { |vacancy, _| vacancy.new_for_user }
         expose :application_id
       end

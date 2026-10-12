@@ -10,17 +10,19 @@ module Aggregator
       def call(input)
         attrs = step validate(input)
 
-        transaction do
-          posting = VacancyPosting.find_by(source: attrs[:source], external_id: attrs[:external_id])
-          next refresh(posting, attrs) if posting
+        posting = transaction do
+          existing = VacancyPosting.find_by(source: attrs[:source], external_id: attrs[:external_id])
+          next refresh(existing, attrs) if existing
 
           company = find_or_create_company(attrs)
           vacancy = find_or_create_vacancy(company, attrs)
           vacancy.postings.create!(
-            source: attrs[:source], external_id: attrs[:external_id], url: attrs[:url],
+            source: attrs[:source], external_id: attrs[:external_id], url: attrs[:url], tags: attrs[:skills] || [],
             raw: attrs[:raw] || {}, first_seen_at: Time.current, last_seen_at: Time.current
           )
         end
+        ExtractSkills.new.call(posting.vacancy) if posting.previously_new_record? || posting.saved_change_to_tags?
+        posting
       end
 
       private
@@ -31,7 +33,7 @@ module Aggregator
       end
 
       def refresh(posting, attrs)
-        posting.update!(last_seen_at: Time.current, active: true, url: attrs[:url], raw: attrs[:raw] || posting.raw)
+        posting.update!(last_seen_at: Time.current, active: true, url: attrs[:url], raw: attrs[:raw] || posting.raw, tags: attrs[:skills] || posting.tags)
         posting
       end
 

@@ -116,6 +116,7 @@ func (s *Source) convert(o offer, query string) (posting.Posting, bool) {
 		Language:    source.LanguageFor(query),
 		Description: o.Description,
 		Currency:    o.Currency,
+		Skills:      skills,
 		Raw:         o,
 	}
 	if o.Company.ID != nil {

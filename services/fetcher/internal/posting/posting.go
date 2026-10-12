@@ -24,6 +24,7 @@ type Posting struct {
 	Currency    string     `json:"currency,omitempty"`
 	Description string     `json:"description,omitempty"`
 	PublishedAt *time.Time `json:"published_at,omitempty"`
+	Skills      []string   `json:"skills,omitempty"`
 	Raw         any        `json:"raw,omitempty"`
 }
 

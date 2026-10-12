@@ -19,6 +19,7 @@ module Aggregator
         optional(:currency).maybe(:string)
         optional(:description).maybe(:string)
         optional(:published_at).maybe(:time)
+        optional(:skills).array(Tracker::Types::StrippedString)
         optional(:raw).maybe(:hash)
       end
     end

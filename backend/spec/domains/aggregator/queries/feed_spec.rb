@@ -51,6 +51,14 @@ RSpec.describe Aggregator::Queries::Feed do
     expect(described_class.new(user, q: "onsite").call.vacancies.map(&:title)).to eq([ "Go onsite habr" ])
   end
 
+  it "filters by skill slug" do
+    tagged = aggregated("Kafka one")
+    create(:vacancy_skill, vacancy: tagged, skill: create(:skill, slug: "kafka"))
+    aggregated("No kafka")
+
+    expect(described_class.new(user, skill: "kafka").call.vacancies).to eq([ tagged ])
+  end
+
   it "paginates" do
     stub_const("Aggregator::Queries::Feed::PER_PAGE", 2)
     3.times { |i| aggregated("V#{i}", created_at: i.hours.ago) }
